@@ -1,0 +1,33 @@
+# ---------------------------------------------------------------------------
+# Prototipo local SensoLab Community — se queda APAGADO por defecto.
+#
+#   Encender para pruebas:   docker compose up -d --build
+#   Ver logs:                docker compose logs -f
+#   Apagar:                  docker compose down
+#   Apagar + borrar datos:   docker compose down -v
+#
+# App + API:  http://localhost:4000
+# ---------------------------------------------------------------------------
+services:
+  sensolab:
+    build: .
+    image: sensolab-community:local
+    container_name: sensolab-community
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: "4000"
+      JWT_SECRET: "sensolab-local-dev-secret"
+      SENSOLAB_DB_PATH: "/data/sensolab.db"
+      CORS_ORIGIN: "*"
+    volumes:
+      - sensolab-db:/data        # la base SQLite persiste entre reinicios
+    restart: "no"                # prototipo: nunca se levanta solo
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  sensolab-db:

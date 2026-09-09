@@ -1,0 +1,21 @@
+{
+  "name": "sensolab-community-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend para el prototipo SensoLab Community: auth, sesiones sensoriales, puntos, ranking, notificaciones y preferencias.",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "seed": "node --disable-warning=ExperimentalWarning seed.js",
+    "reset": "node --disable-warning=ExperimentalWarning seed.js --reset",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

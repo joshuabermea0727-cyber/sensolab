@@ -1,0 +1,9 @@
+node_modules/
+*.log
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+.vercel
+.DS_Store

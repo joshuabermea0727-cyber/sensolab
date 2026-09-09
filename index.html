@@ -1,0 +1,2910 @@
+<title>SensoLab Community</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- URL del backend en producción (Vercel → Railway). Vacío en local. -->
+<script src="config.js"></script>
+
+<style>
+  @property --pct {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 0;
+  }
+
+  :root {
+    --ink: #0a0d13;
+    --ink-soft: #0f1420;
+    --navy-900: #141d2b;
+    --navy-800: #1b2636;
+    --navy-700: #243244;
+    --line: rgba(167, 179, 194, 0.14);
+    --line-soft: rgba(167, 179, 194, 0.08);
+    --orange: #f2891c;
+    --orange-hi: #ffb067;
+    --orange-ink: #241202;
+    --teal: #3fb2bd;
+    --teal-hi: #7fd4dd;
+    --teal-ink: #04191b;
+    --paper: #f3f0e8;
+    --paper-dim: #c9c3b4;
+    --text-primary: #f3f0e8;
+    --text-secondary: #9aa7b8;
+    --text-tertiary: #6a7686;
+    --shadow-color: 220 60% 2%;
+    --radius-lg: 28px;
+    --radius-md: 18px;
+    --radius-sm: 12px;
+
+    /* solid chip tokens — chosen so text/bg pairs hit AAA (>=7:1) deterministically,
+       not composited over a variable gradient. Verified with the WCAG 2.1 formula. */
+    --chip-amber-bg: #3d2a12;
+    --chip-amber-text: #fed7aa;   /* 10.09:1 on --chip-amber-bg */
+    --chip-teal-bg: #16323d;
+    --chip-teal-text: #81d7e0;    /* 8.17:1 on --chip-teal-bg */
+    --chip-neutral-bg: #2b3648;
+    --chip-neutral-text: #c3c9d2; /* 7.31:1 on --chip-neutral-bg */
+    --chip-locked-bg: #232d3d;
+    --chip-locked-text: #b6bdc6;  /* 7.32:1 on --chip-locked-bg — muted, not orange: locked is not an action */
+    --me-row-bg: #332615;
+    --me-row-name: #f3f0e8;       /* 12.91:1 */
+    --me-row-level: #d7cdb8;      /* 9.32:1 */
+    --me-row-pts: #ffd699;        /* 10.73:1 */
+    --cerrar-sesion-text: #f2a08f; /* 7.41:1 on navy-800 */
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--ink);
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+    color: var(--text-primary);
+    position: relative;
+  }
+
+  /* ---------- Ambient background ---------- */
+  .ambient {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background: radial-gradient(120% 90% at 50% -10%, #121a26 0%, var(--ink) 55%);
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.55;
+    will-change: transform;
+  }
+  .blob--orange {
+    width: 46vw;
+    height: 46vw;
+    left: -12vw;
+    top: 8vh;
+    background: radial-gradient(circle at 35% 35%, var(--orange) 0%, transparent 70%);
+    animation: drift1 22s ease-in-out infinite;
+  }
+  .blob--teal {
+    width: 40vw;
+    height: 40vw;
+    right: -10vw;
+    bottom: 4vh;
+    background: radial-gradient(circle at 60% 60%, var(--teal) 0%, transparent 70%);
+    animation: drift2 26s ease-in-out infinite;
+  }
+  .blob--faint {
+    width: 30vw;
+    height: 30vw;
+    right: 18vw;
+    top: -8vh;
+    background: radial-gradient(circle, var(--orange-hi) 0%, transparent 70%);
+    opacity: 0.18;
+    animation: drift1 30s ease-in-out infinite reverse;
+  }
+  @keyframes drift1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(4vw, 5vh) scale(1.08); }
+  }
+  @keyframes drift2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-5vw, -3vh) scale(1.06); }
+  }
+
+  /* film-grain texture, applied globally */
+  .grain {
+    position: fixed;
+    inset: -10%;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+  }
+
+  /* ---------- Phone frame ---------- */
+  .device {
+    position: relative;
+    z-index: 1;
+    width: 393px;
+    height: 852px;
+    max-height: 92vh;
+    aspect-ratio: 393 / 852;
+    background: linear-gradient(180deg, #05070b, #000);
+    border-radius: 58px;
+    padding: 14px;
+    box-shadow:
+      0 0 0 2px rgba(255,255,255,0.06) inset,
+      0 40px 90px -25px hsl(var(--shadow-color) / 0.9),
+      0 10px 30px -10px hsl(var(--shadow-color) / 0.7);
+  }
+
+  .screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 44px;
+    overflow: hidden;
+    background: var(--navy-900);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen::after{
+    content:"";
+    position:absolute; inset:0;
+    border-radius:44px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset;
+    pointer-events:none;
+    z-index: 40;
+  }
+
+  .island {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 34px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 50;
+  }
+
+  .statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px 4px;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex-shrink: 0;
+  }
+  .statusbar svg { display: block; }
+
+  /* ---------- Content ---------- */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 22px 110px;
+    scrollbar-width: none;
+  }
+  .content::-webkit-scrollbar { display: none; }
+
+  .app-view {
+    display: none;
+    animation: viewIn 0.5s cubic-bezier(.22,.68,0,1.01) both;
+  }
+  .app-view.active { display: block; }
+  @keyframes viewIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal-hi);
+    font-weight: 500;
+  }
+
+  h1.page-title {
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: 26px;
+    line-height: 1.15;
+    margin: 4px 0 2px;
+    color: var(--paper);
+    text-wrap: balance;
+  }
+
+  .sub {
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* header row */
+  .home-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-top: 14px;
+  }
+  .avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--orange), var(--teal));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--orange-ink);
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px var(--navy-900), 0 0 0 3px var(--line);
+  }
+
+  /* ---------- Gauge card ---------- */
+  .gauge-card {
+    margin-top: 18px;
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    background:
+      radial-gradient(120% 140% at 100% 0%, rgba(63,178,189,0.16), transparent 55%),
+      radial-gradient(120% 140% at 0% 100%, rgba(242,137,28,0.14), transparent 55%),
+      var(--navy-800);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .gauge-wrap { position: relative; width: 108px; height: 108px; flex-shrink: 0; }
+  .gauge-wrap svg { transform: rotate(-90deg); }
+  .gauge-track { fill: none; stroke: var(--line); stroke-width: 9; }
+  .gauge-fill {
+    fill: none;
+    stroke: url(#gaugeGradient);
+    stroke-width: 9;
+    stroke-linecap: round;
+    stroke-dasharray: 283;
+    stroke-dashoffset: 283;
+    transition: stroke-dashoffset 1.4s cubic-bezier(.16,.84,.16,1) 0.2s;
+  }
+  .gauge-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .gauge-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--paper);
+    font-variant-numeric: tabular-nums;
+  }
+  .gauge-label {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-top: 1px;
+  }
+  .gauge-copy { flex: 1; min-width: 0; }
+  .gauge-copy .level-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 19px;
+    color: var(--paper);
+  }
+  .gauge-copy .level-sub {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 9px;
+    padding: 4px 10px 4px 8px;
+    border-radius: 100px;
+    background: var(--chip-amber-bg);
+    border: 1px solid rgba(254,215,170,0.25);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--chip-amber-text);
+    font-weight: 500;
+  }
+
+  /* ---------- stat row ---------- */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .stat {
+    border-radius: var(--radius-md);
+    background: var(--navy-800);
+    border: 1px solid var(--line);
+    padding: 13px 12px;
+  }
+  .stat .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--paper);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .lbl {
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+  }
+
+  /* ---------- section heading ---------- */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 26px 0 12px;
+  }
+  .section-head h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--paper);
+    margin: 0;
+  }
+  .section-head a {
+    font-size: 12px;
+    color: var(--teal-hi);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  /* ---------- session card ---------- */
+  .session-card {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 13px;
+    border-radius: var(--radius-md);
+    background: var(--navy-800);
+    border: 1px solid var(--line);
+    margin-bottom: 10px;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: cardIn 0.5s cubic-bezier(.22,.68,0,1.01) forwards;
+  }
+  .session-card:active { transform: scale(0.98); }
+  .session-card.is-actionable { cursor: pointer; }
+  .session-card.is-actionable:hover { border-color: rgba(129,215,224,0.4); }
+  @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
+
+  .sense-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .sense-icon svg { width: 20px; height: 20px; }
+
+  .icon-taste { background: rgba(242,137,28,0.15); color: var(--orange-hi); }
+  .icon-touch { background: rgba(63,178,189,0.15); color: var(--teal-hi); }
+  .icon-smell { background: rgba(242,137,28,0.15); color: var(--orange-hi); }
+  .icon-sound { background: rgba(63,178,189,0.15); color: var(--teal-hi); }
+  .icon-sight { background: rgba(154,167,184,0.14); color: var(--text-secondary); }
+
+  .session-body { flex: 1; min-width: 0; }
+  .session-body .name {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--paper);
+  }
+  .session-body .desc {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .status-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .chip-open { background: var(--chip-teal-bg); color: var(--chip-teal-text); border: 1px solid rgba(129,215,224,0.25); }
+  .chip-progress { background: var(--chip-amber-bg); color: var(--chip-amber-text); border: 1px solid rgba(254,215,170,0.25); }
+  .chip-done { background: var(--chip-neutral-bg); color: var(--chip-neutral-text); border: 1px solid rgba(195,201,210,0.2); }
+  .chip-locked { background: var(--chip-locked-bg); color: var(--chip-locked-text); border: 1px solid rgba(182,189,198,0.18); display: inline-flex; align-items: center; gap: 4px; }
+  .chip-locked svg { width: 11px; height: 11px; }
+
+  /* ---------- primary CTA card ---------- */
+  .cta-card {
+    margin-top: 22px;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    /* solid orange, not a gradient to a darker stop — a two-stop gradient here
+       let the dark end drop under 7:1 for black text. Verified: black on
+       --orange = 8.37:1. The white blob below adds depth without touching contrast. */
+    background: var(--orange);
+    color: #000000;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-card::before {
+    content: "";
+    position: absolute;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    top: -60px; right: -50px;
+  }
+  .cta-card h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: #000000;
+    position: relative;
+  }
+  .cta-card p {
+    font-size: 12.5px;
+    margin: 0 0 14px;
+    color: #000000;
+    max-width: 220px;
+    position: relative;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--orange-ink);
+    color: var(--orange-hi);
+    border: none;
+    padding: 11px 18px;
+    border-radius: 100px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.15s ease, filter 0.15s ease;
+  }
+  .btn:active { transform: scale(0.96); filter: brightness(1.15); }
+  .btn[disabled] { opacity: 0.6; pointer-events: none; }
+
+  /* ---------- activity list ---------- */
+  .activity-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .activity-row:last-child { border-bottom: none; }
+  .activity-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--teal);
+    flex-shrink: 0;
+    box-shadow: 0 0 0 3px rgba(63,178,189,0.15);
+  }
+  .activity-text { flex: 1; font-size: 12.5px; color: var(--text-secondary); }
+  .activity-text b { color: var(--paper); font-weight: 700; }
+  .activity-time {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+  }
+  .empty-note {
+    font-size: 12.5px;
+    color: var(--text-tertiary);
+    padding: 8px 0;
+  }
+
+  /* ---------- leaderboard ---------- */
+  .rank-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+    background: var(--navy-800);
+    border: 1px solid var(--line);
+    opacity: 0;
+    transform: translateY(8px);
+    animation: cardIn 0.5s cubic-bezier(.22,.68,0,1.01) forwards;
+  }
+  .rank-row.me {
+    /* solid highlight bg, not a translucent gradient — keeps every text color on
+       this row at a guaranteed, calculated contrast instead of an estimate. */
+    background: var(--me-row-bg);
+    border-color: rgba(254,215,170,0.35);
+  }
+  .rank-row.me .rname { color: var(--me-row-name); }
+  .rank-row.me .rlevel { color: var(--me-row-level); }
+  .rank-row.me .rank-pts { color: var(--me-row-pts); }
+  .rank-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .rank-row.top .rank-num { color: var(--orange-hi); }
+  .rank-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--navy-700));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 13px;
+    color: var(--paper); flex-shrink: 0;
+  }
+  .rank-body { flex: 1; min-width: 0; }
+  .rank-body .rname { font-size: 13.5px; font-weight: 700; color: var(--paper); }
+  .rank-body .rlevel { font-size: 11px; color: var(--text-tertiary); }
+  .rank-pts {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--teal-hi);
+    flex-shrink: 0;
+  }
+
+  /* ---------- profile ---------- */
+  .profile-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-top: 18px;
+  }
+  .avatar-lg {
+    width: 78px; height: 78px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--orange), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-weight: 700; font-size: 28px;
+    color: var(--orange-ink);
+    box-shadow: 0 0 0 4px var(--navy-900), 0 0 0 5px var(--line);
+  }
+  .profile-head h1 { margin: 12px 0 2px; }
+  .badge-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .badge {
+    border-radius: var(--radius-md);
+    background: var(--navy-800);
+    border: 1px solid var(--line);
+    padding: 14px 8px;
+    text-align: center;
+  }
+  .badge .bicon {
+    width: 30px; height: 30px; margin: 0 auto 6px;
+    border-radius: 50%;
+    background: rgba(63,178,189,0.15);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--teal-hi);
+  }
+  .badge .bicon svg { width: 15px; height: 15px; }
+  .badge .bname { font-size: 10.5px; font-weight: 700; color: var(--paper); line-height: 1.25; }
+
+  .settings-list {
+    margin-top: 22px;
+    border-radius: var(--radius-md);
+    background: var(--navy-800);
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13.5px;
+    color: var(--paper);
+    font-weight: 600;
+  }
+  .settings-row:last-child { border-bottom: none; color: var(--cerrar-sesion-text); }
+  .settings-row { cursor: pointer; }
+  .settings-row svg { flex-shrink: 0; color: var(--text-tertiary); }
+  .settings-row span { flex: 1; }
+  .settings-row .chev { color: var(--text-tertiary); }
+
+  /* ---------- tab bar ---------- */
+  .tabbar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 30;
+    padding: 10px 18px calc(env(safe-area-inset-bottom, 10px) + 10px);
+    background: rgba(20,29,43,0.72);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+  }
+  .tab {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    padding: 4px 0;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    font-family: 'Manrope', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    transition: color 0.2s ease;
+  }
+  .tab svg { width: 21px; height: 21px; transition: transform 0.25s cubic-bezier(.34,1.56,.64,1); }
+  .tab.active { color: var(--orange-hi); }
+  .tab.active svg { transform: translateY(-2px); }
+  .tab-dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--orange-hi);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .tab.active .tab-dot { opacity: 1; }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    border-radius: 100px;
+    background: rgba(255,255,255,0.85);
+    z-index: 50;
+  }
+
+  /* ---------- pushed screens (not tabs): back header ---------- */
+  .push-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 14px;
+    margin-bottom: 4px;
+  }
+  .back-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--navy-800);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--paper);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .back-btn:active { transform: scale(0.92); }
+  .back-btn svg { width: 17px; height: 17px; }
+  .screen.push-active .tabbar { display: none; }
+  .screen.push-active .content { padding-bottom: 24px; }
+  .screen.push-active .home-indicator { background: rgba(255,255,255,0.85); }
+
+  /* ---------- sesión activa ---------- */
+  .timer-ring-wrap { display: flex; justify-content: center; margin: 26px 0 6px; }
+  .timer-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 46px;
+    font-weight: 600;
+    color: var(--paper);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  .timer-sub { text-align: center; color: var(--text-tertiary); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 22px; }
+  .session-info-card {
+    border-radius: var(--radius-lg);
+    background: var(--navy-800);
+    border: 1px solid var(--line);
+    padding: 20px;
+  }
+  .session-info-card .step {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .session-info-card .step:last-child { border-bottom: none; }
+  .session-info-card .step-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--orange-hi);
+    background: var(--chip-amber-bg);
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .session-info-card .step p { margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .session-info-card .step p b { color: var(--paper); }
+  .btn-complete {
+    width: 100%;
+    margin-top: 22px;
+    padding: 15px;
+    border-radius: var(--radius-md);
+    background: var(--orange);
+    color: #000000;
+    border: none;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 800;
+    font-size: 14.5px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .btn-complete:active { transform: scale(0.97); }
+  .btn-complete[disabled] { opacity: 0.6; pointer-events: none; }
+
+  /* ---------- notificaciones ---------- */
+  .notif-row {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .notif-row:last-child { border-bottom: none; }
+  .notif-icon {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--chip-teal-bg); color: var(--chip-teal-text);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .notif-icon svg { width: 16px; height: 16px; }
+  .notif-body .ntitle { font-size: 13.5px; font-weight: 700; color: var(--paper); }
+  .notif-body .ntime { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+  /* ---------- preferencias (toggles) ---------- */
+  .pref-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--line-soft);
+    gap: 12px;
+  }
+  .pref-row:last-child { border-bottom: none; }
+  .pref-text .ptitle { font-size: 13.5px; font-weight: 700; color: var(--paper); }
+  .pref-text .psub { font-size: 11.5px; color: var(--text-tertiary); margin-top: 2px; }
+  .toggle {
+    width: 44px; height: 26px;
+    border-radius: 100px;
+    background: var(--navy-700);
+    border: 1px solid var(--line);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+  }
+  .toggle::after {
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), background 0.2s ease;
+  }
+  .toggle.on { background: var(--orange); border-color: transparent; }
+  .toggle.on::after { transform: translateX(18px); background: #000000; }
+  .toggle.busy { opacity: 0.5; pointer-events: none; }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: absolute;
+    top: 66px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-14px);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--paper);
+    color: #14210f;
+    padding: 11px 18px;
+    border-radius: 100px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    box-shadow: 0 12px 30px -8px rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(.22,.68,0,1.01);
+    max-width: 300px;
+    text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast svg { width: 16px; height: 16px; color: #178a4a; flex-shrink: 0; }
+  .toast.err { background: #3d1a17; color: #ffd7cf; }
+  .toast.err svg { color: #ff8f7a; }
+
+  /* ---------- loading / offline banner ---------- */
+  .boot-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 70;
+    background: var(--navy-900);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 32px;
+    text-align: center;
+  }
+  .boot-overlay[hidden] { display: none; }
+  .boot-spinner {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 3px solid var(--line);
+    border-top-color: var(--orange-hi);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .boot-overlay .bmsg { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .boot-overlay .bcode {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--orange-hi);
+    background: var(--ink-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+  .boot-overlay button {
+    margin-top: 4px;
+    background: var(--orange);
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 100px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob, .app-view, .session-card, .rank-row { animation: none !important; }
+    .gauge-fill { transition: none; }
+    .boot-spinner { animation-duration: 2s; }
+  }
+
+  /* ===================================================================
+     Onboarding / auth — v2 (rediseño)
+     =================================================================== */
+  .screen.auth-active .tabbar { display: none; }
+  .screen.auth-active .content { padding: 0 22px 26px; }
+  .screen.auth-active .home-indicator { background: rgba(255,255,255,0.85); }
+
+  .auth-view { padding-top: 4px; animation: authIn 0.4s cubic-bezier(.22,.68,0,1.01) both; }
+  @keyframes authIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  /* --- landing --- */
+  .auth-splash { display: flex; flex-direction: column; min-height: calc(100% - 20px); }
+  .auth-hero {
+    text-align: center; padding: 42px 0 26px;
+    position: relative;
+  }
+  .auth-hero::after {
+    content: ""; position: absolute; left: 50%; top: 20px; width: 220px; height: 220px;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(242,137,28,0.16), transparent 65%);
+    filter: blur(20px); z-index: -1;
+  }
+  .auth-logo svg { width: 208px; height: auto; }
+  .auth-tagline {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-tertiary);
+    margin-top: 16px;
+  }
+
+  .auth-benefits { display: flex; flex-direction: column; gap: 12px; margin: 8px 0 4px; }
+  .auth-benefit {
+    display: flex; align-items: center; gap: 13px;
+    padding: 13px 14px; border-radius: var(--radius-md);
+    background: var(--navy-800); border: 1px solid var(--line);
+  }
+  .auth-benefit .ab-ic {
+    width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .auth-benefit .ab-ic svg { width: 19px; height: 19px; }
+  .auth-benefit:nth-child(1) .ab-ic { background: rgba(242,137,28,0.15); color: var(--orange-hi); }
+  .auth-benefit:nth-child(2) .ab-ic { background: rgba(63,178,189,0.15); color: var(--teal-hi); }
+  .auth-benefit:nth-child(3) .ab-ic { background: rgba(154,167,184,0.14); color: var(--text-secondary); }
+  .auth-benefit .ab-t { font-size: 13.5px; font-weight: 700; color: var(--paper); }
+  .auth-benefit .ab-s { font-size: 11.5px; color: var(--text-tertiary); margin-top: 1px; }
+
+  .auth-actions { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 22px; }
+  .auth-btn {
+    width: 100%; padding: 15px; border-radius: 100px; border: none;
+    font: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
+    transition: transform 0.14s ease, filter 0.14s ease;
+  }
+  .auth-btn.primary { background: var(--orange); color: #000; }
+  .auth-btn.primary:active { transform: scale(0.98); filter: brightness(1.08); }
+  .auth-btn.ghost { background: var(--navy-800); color: var(--paper); border: 1px solid var(--line); }
+  .auth-btn.ghost:active { transform: scale(0.98); }
+  .auth-btn.link { background: none; color: var(--teal-hi); font-weight: 600; font-size: 13px; padding: 8px; }
+  .auth-btn[disabled] { opacity: 0.5; pointer-events: none; }
+
+  /* --- step header (register / verify / perfil / consent) --- */
+  .auth-top {
+    display: flex; align-items: center; gap: 12px;
+    padding-top: 16px; margin-bottom: 20px;
+  }
+  .auth-back {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    background: var(--navy-800); border: 1px solid var(--line); color: var(--paper);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .auth-back:active { transform: scale(0.92); }
+  .auth-back svg { width: 16px; height: 16px; }
+  .auth-steps { display: flex; gap: 6px; flex: 1; }
+  .auth-step-dot { flex: 1; height: 4px; border-radius: 100px; background: var(--navy-700); }
+  .auth-step-dot.done { background: var(--teal); }
+  .auth-step-dot.active { background: var(--orange); }
+  .auth-step-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-tertiary); white-space: nowrap;
+  }
+
+  .auth-h {
+    font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 600;
+    color: var(--paper); margin: 0 0 6px; line-height: 1.15;
+  }
+  .auth-p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 22px; }
+  .auth-p b { color: var(--paper); }
+
+  /* --- fields --- */
+  .fld { margin-bottom: 14px; }
+  .fld-label {
+    display: block; font-size: 11px; font-weight: 700; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px;
+  }
+  .fld-box { position: relative; display: flex; align-items: center; }
+  .fld-box svg {
+    position: absolute; left: 13px; width: 17px; height: 17px;
+    color: var(--text-tertiary); pointer-events: none;
+  }
+  .fld-input, .fld-select {
+    width: 100%; background: var(--navy-800); border: 1px solid var(--line);
+    color: var(--paper); border-radius: var(--radius-sm); padding: 13px 13px 13px 40px;
+    font: inherit; font-size: 14px; transition: border-color 0.15s ease;
+    appearance: none;
+  }
+  .fld-input.no-ic, .fld-select.no-ic { padding-left: 13px; }
+  .fld-input:focus, .fld-select:focus { outline: none; border-color: var(--teal); }
+  .fld-input::placeholder { color: var(--text-tertiary); }
+  .fld-select { padding-right: 34px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236a7686' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+  .fld-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 6px; }
+
+  /* --- OTP boxes --- */
+  .otp-row { display: flex; gap: 9px; justify-content: space-between; }
+  .otp-cell {
+    flex: 1; min-width: 0; aspect-ratio: 1 / 1.15;
+    text-align: center; font-family: 'IBM Plex Mono', monospace;
+    font-size: 24px; font-weight: 600; color: var(--paper);
+    background: var(--navy-800); border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm); caret-color: var(--teal);
+  }
+  .otp-cell:focus { outline: none; border-color: var(--teal); background: var(--navy-700); }
+  .otp-cell.filled { border-color: rgba(129,215,224,0.45); }
+  .auth-devhint {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 14px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    color: var(--chip-amber-text); background: var(--chip-amber-bg);
+    padding: 6px 11px; border-radius: 100px;
+  }
+  .auth-resend {
+    background: none; border: none; color: var(--teal-hi); font: inherit;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; margin-top: 14px; padding: 4px;
+  }
+
+  /* --- onboarding cards --- */
+  .onb-card {
+    background: var(--navy-800); border: 1px solid var(--line);
+    border-radius: var(--radius-md); padding: 16px; margin-bottom: 14px;
+  }
+  .onb-card-h {
+    font-size: 13px; font-weight: 800; color: var(--paper); margin: 0 0 4px;
+  }
+  .onb-card-s { font-size: 11.5px; color: var(--text-tertiary); margin: 0 0 14px; }
+
+  .chip-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-select {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 13px; border-radius: 100px; cursor: pointer;
+    background: var(--navy-900); border: 1px solid var(--line);
+    color: var(--text-secondary); font-size: 12.5px; font-weight: 600;
+    transition: all 0.14s ease;
+  }
+  .chip-select::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-tertiary); transition: all 0.14s ease;
+  }
+  .chip-select.on {
+    background: var(--chip-teal-bg); border-color: rgba(129,215,224,0.5); color: var(--chip-teal-text);
+  }
+  .chip-select.on::before { background: var(--teal); box-shadow: 0 0 0 3px rgba(63,178,189,0.25); }
+  .chip-select:active { transform: scale(0.96); }
+
+  .seg {
+    display: flex; background: var(--navy-900); border: 1px solid var(--line);
+    border-radius: 100px; padding: 3px; gap: 3px;
+  }
+  .seg-opt {
+    flex: 1; text-align: center; padding: 9px 4px; border-radius: 100px;
+    font-size: 12.5px; font-weight: 700; color: var(--text-secondary); cursor: pointer;
+    transition: all 0.14s ease;
+  }
+  .seg-opt.on { background: var(--teal); color: var(--teal-ink); }
+
+  .onb-toggle-row {
+    display: flex; align-items: center; justify-content: space-between; padding: 4px 0;
+  }
+  .onb-toggle-row .otr-t { font-size: 13.5px; color: var(--paper); font-weight: 600; }
+  .onb-toggle-row .otr-s { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
+
+  /* --- consent --- */
+  .consent-box {
+    background: var(--navy-900); border: 1px solid var(--line);
+    border-radius: var(--radius-md); padding: 15px; margin: 4px 0 8px;
+    font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+  }
+  .consent-check {
+    display: flex; gap: 11px; align-items: flex-start; padding: 13px;
+    border-radius: var(--radius-sm); background: var(--navy-800); border: 1px solid var(--line);
+    margin-top: 9px; font-size: 12.5px; color: var(--paper); line-height: 1.45; cursor: pointer;
+  }
+  .consent-check input { margin-top: 1px; accent-color: var(--teal); width: 17px; height: 17px; flex-shrink: 0; }
+  .consent-check .cc-opt { color: var(--text-tertiary); font-weight: 500; }
+  /* ===================================================================
+     Pruebas sensoriales a distancia (remote-mock.js + remote.js)
+     =================================================================== */
+  .remote-entry {
+    display: flex; align-items: center; gap: 13px;
+    padding: 14px; margin-bottom: 16px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(120% 140% at 100% 0%, rgba(63,178,189,0.16), var(--navy-800) 60%);
+    border: 1px solid rgba(129,215,224,0.28);
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .remote-entry:active { transform: scale(0.985); }
+  .remote-entry .sense-icon { background: rgba(63,178,189,0.16); color: var(--teal-hi); }
+  .remote-entry .re-body { flex: 1; min-width: 0; }
+  .remote-entry .re-title { font-size: 14.5px; font-weight: 700; color: var(--paper); }
+  .remote-entry .re-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 1px; }
+  .remote-entry .re-chev { color: var(--teal-hi); flex-shrink: 0; }
+  .remote-entry .re-chev svg { width: 16px; height: 16px; }
+
+  .r-stagechip {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
+    padding: 4px 8px; border-radius: 100px; white-space: nowrap; flex-shrink: 0;
+  }
+  .r-stage-kit       { background: var(--chip-teal-bg);    color: var(--chip-teal-text); }
+  .r-stage-confirm   { background: var(--chip-amber-bg);   color: var(--chip-amber-text); }
+  .r-stage-ready     { background: var(--chip-teal-bg);    color: var(--chip-teal-text); }
+  .r-stage-submitted { background: var(--chip-amber-bg);   color: var(--chip-amber-text); }
+  .r-stage-done      { background: var(--chip-neutral-bg); color: var(--chip-neutral-text); }
+  .r-stage-rejected  { background: #3a1f1f;                color: #f2a08f; }
+  .r-stage-locked    { background: var(--chip-locked-bg);  color: var(--chip-locked-text); }
+
+  .ship-track { margin: 18px 0; padding: 4px 0; }
+  .ship-step { display: flex; gap: 12px; align-items: flex-start; position: relative; padding-bottom: 18px; }
+  .ship-step:last-child { padding-bottom: 0; }
+  .ship-step::before {
+    content: ""; position: absolute; left: 8px; top: 20px; bottom: 0; width: 2px; background: var(--line);
+  }
+  .ship-step:last-child::before { display: none; }
+  .ship-dot {
+    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; z-index: 1;
+    border: 2px solid var(--line); background: var(--navy-900); margin-top: 1px;
+  }
+  .ship-step.is-done .ship-dot { background: var(--teal); border-color: var(--teal); }
+  .ship-step.is-current .ship-dot { border-color: var(--orange); background: var(--orange); }
+  .ship-step .ss-title { font-size: 13.5px; font-weight: 600; color: var(--paper); }
+  .ship-step.is-pending .ss-title { color: var(--text-tertiary); }
+  .ship-step .ss-meta { font-size: 11.5px; color: var(--text-tertiary); margin-top: 2px; }
+
+  .r-check-row {
+    display: flex; gap: 11px; align-items: flex-start;
+    padding: 12px 13px; margin-bottom: 8px;
+    border-radius: var(--radius-sm); background: var(--navy-800);
+    border: 1px solid var(--line); cursor: pointer;
+  }
+  .r-check-box {
+    width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0; margin-top: 1px;
+    border: 2px solid var(--text-tertiary); display: flex; align-items: center; justify-content: center;
+    color: var(--teal-ink);
+  }
+  .r-check-row.on .r-check-box { background: var(--teal); border-color: var(--teal); }
+  .r-check-row.on .r-check-box svg { width: 13px; height: 13px; }
+  .r-check-row:not(.on) .r-check-box svg { display: none; }
+  .r-check-row .rc-text { font-size: 13px; color: var(--paper); line-height: 1.4; }
+
+  .r-drop {
+    display: block; padding: 22px 16px; text-align: center; cursor: pointer;
+    border-radius: var(--radius-md); border: 1.5px dashed rgba(129,215,224,0.4);
+    background: rgba(63,178,189,0.06); color: var(--text-secondary); margin: 6px 0 4px;
+  }
+  .r-drop input { display: none; }
+  .r-drop .rd-title { font-size: 13px; font-weight: 600; color: var(--paper); }
+  .r-drop .rd-sub { font-size: 11.5px; color: var(--text-tertiary); margin-top: 3px; }
+  .r-drop.has-file { border-style: solid; border-color: var(--teal); background: rgba(63,178,189,0.12); }
+  .r-field-label {
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.06em; margin: 18px 0 8px;
+  }
+  .r-textarea {
+    width: 100%; min-height: 92px; resize: vertical;
+    background: var(--navy-800); border: 1px solid var(--line); color: var(--paper);
+    border-radius: var(--radius-sm); padding: 11px 12px; font: inherit; font-size: 13px;
+  }
+  .r-textarea:focus { outline: none; border-color: rgba(129,215,224,0.5); }
+  .r-consent-row {
+    display: flex; gap: 10px; align-items: flex-start; margin-top: 14px;
+    font-size: 12px; color: var(--text-secondary);
+  }
+  .r-consent-row input { margin-top: 2px; accent-color: var(--teal); }
+
+  .r-result-wrap { text-align: center; margin-top: 30px; }
+  .r-result-icon {
+    width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .r-result-icon svg { width: 30px; height: 30px; }
+  .r-result-icon.ok   { background: rgba(63,178,189,0.16); color: var(--teal-hi); }
+  .r-result-icon.wait { background: rgba(242,137,28,0.16); color: var(--orange-hi); }
+  .r-result-icon.no   { background: #3a1f1f; color: #f2a08f; }
+  .r-meter { margin: 20px 0 6px; }
+  .r-meter-track { height: 8px; border-radius: 100px; background: var(--navy-700); overflow: hidden; }
+  .r-meter-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--orange), var(--teal)); }
+  .r-meter-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-tertiary);
+    margin-top: 6px; display: flex; justify-content: space-between;
+  }
+
+  .rq-card {
+    padding: 14px; margin-bottom: 12px; border-radius: var(--radius-md);
+    background: var(--navy-800); border: 1px solid var(--line);
+  }
+  .rq-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .rq-avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    background: var(--navy-700); color: var(--paper);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+  }
+  .rq-who { flex: 1; min-width: 0; }
+  .rq-who .rqw-name { font-size: 13.5px; font-weight: 700; color: var(--paper); }
+  .rq-who .rqw-meta { font-size: 11px; color: var(--text-tertiary); }
+  .rq-score {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;
+    padding: 3px 9px; border-radius: 100px; background: var(--chip-amber-bg); color: var(--chip-amber-text);
+  }
+  .rq-media { display: flex; gap: 8px; margin: 10px 0; }
+  .rq-thumb {
+    flex: 1; height: 66px; border-radius: var(--radius-sm);
+    background: repeating-linear-gradient(45deg, var(--navy-700), var(--navy-700) 8px, var(--navy-900) 8px, var(--navy-900) 16px);
+    border: 1px solid var(--line); display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--text-tertiary); text-align: center; padding: 4px;
+  }
+  .rq-thumb.missing { border-color: #5a3030; color: #f2a08f; background: #2a1a1a; }
+  .rq-flags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .rq-flag {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
+    padding: 3px 7px; border-radius: 100px;
+  }
+  .rq-flag.alta  { background: #3a1f1f; color: #f7b5a6; }
+  .rq-flag.media { background: var(--chip-amber-bg); color: var(--chip-amber-text); }
+  .rq-flag.baja  { background: var(--chip-neutral-bg); color: var(--chip-neutral-text); }
+  .rq-answers {
+    font-size: 12px; color: var(--text-secondary); background: var(--navy-900);
+    border-radius: var(--radius-sm); padding: 9px 11px; margin: 8px 0; line-height: 1.5; word-break: break-word;
+  }
+  .rq-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .rq-btn {
+    flex: 1; padding: 10px; border-radius: 100px; border: none; font: inherit;
+    font-weight: 700; font-size: 12.5px; cursor: pointer;
+  }
+  .rq-btn.approve { background: var(--teal); color: var(--teal-ink); }
+  .rq-btn.reject  { background: #3a1f1f; color: #f7b5a6; }
+  .rq-btn:active { transform: scale(0.97); }
+
+  .role-strip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 13px; margin: 4px 0 16px;
+    border-radius: var(--radius-md); background: var(--navy-900); border: 1px solid var(--line);
+  }
+  .role-strip .rs-text { flex: 1; font-size: 12px; color: var(--text-secondary); }
+  .role-strip .rs-text b { color: var(--paper); }
+
+  .r-note {
+    font-size: 11.5px; color: var(--text-tertiary); line-height: 1.5;
+    margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-sm);
+    background: var(--navy-900); border: 1px solid var(--line-soft);
+  }
+
+  /* ===================================================================
+     Asistente de IA (chat)
+     =================================================================== */
+  .ai-fab {
+    position: absolute; right: 16px; bottom: 92px; z-index: 40;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--orange); color: var(--orange-ink);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 10px 24px -6px hsl(var(--shadow-color) / 0.7);
+    transition: transform 0.16s ease, filter 0.16s ease;
+  }
+  .ai-fab:active { transform: scale(0.92); }
+  .ai-fab svg { width: 24px; height: 24px; }
+  .screen.auth-active .ai-fab { display: none; }
+  .screen.push-active .ai-fab { bottom: 24px; }
+  .ai-fab.hidden { display: none; }
+
+  .ai-panel {
+    position: absolute; inset: 0; z-index: 60;
+    display: flex; flex-direction: column;
+    background: var(--ink-soft);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(.22,.68,0,1.01);
+  }
+  .ai-panel.open { transform: translateY(0); }
+
+  .ai-head {
+    display: flex; align-items: center; gap: 11px;
+    padding: 16px 18px 14px; border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .ai-head .ai-badge {
+    width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
+    background: rgba(242,137,28,0.16); color: var(--orange-hi);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ai-head .ai-badge svg { width: 18px; height: 18px; }
+  .ai-head .ai-ttl { flex: 1; }
+  .ai-head .ai-ttl b { display: block; font-size: 14px; color: var(--paper); font-weight: 700; }
+  .ai-head .ai-ttl span { font-size: 11px; color: var(--text-tertiary); }
+  .ai-close {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    background: var(--navy-800); border: 1px solid var(--line); color: var(--paper);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .ai-close svg { width: 15px; height: 15px; }
+
+  .ai-body {
+    flex: 1; overflow-y: auto; padding: 16px 16px 8px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .ai-msg { max-width: 82%; padding: 10px 13px; border-radius: 15px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .ai-msg.bot { align-self: flex-start; background: var(--navy-800); border: 1px solid var(--line); color: var(--paper); border-bottom-left-radius: 5px; }
+  .ai-msg.me { align-self: flex-end; background: var(--orange); color: var(--orange-ink); border-bottom-right-radius: 5px; font-weight: 500; }
+  .ai-msg.typing { color: var(--text-tertiary); font-style: italic; }
+
+  .ai-suggest { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 16px 10px; }
+  .ai-chip {
+    padding: 7px 11px; border-radius: 100px; cursor: pointer;
+    background: var(--navy-800); border: 1px solid var(--line);
+    color: var(--text-secondary); font-size: 11.5px; font-weight: 600;
+  }
+  .ai-chip:active { transform: scale(0.96); }
+
+  .ai-input-row {
+    display: flex; gap: 8px; padding: 12px 14px 16px;
+    border-top: 1px solid var(--line); flex-shrink: 0;
+  }
+  .ai-input {
+    flex: 1; background: var(--navy-800); border: 1px solid var(--line);
+    color: var(--paper); border-radius: 100px; padding: 11px 15px;
+    font: inherit; font-size: 13px;
+  }
+  .ai-input:focus { outline: none; border-color: var(--teal); }
+  .ai-send {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    background: var(--orange); color: var(--orange-ink); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ai-send svg { width: 18px; height: 18px; }
+  .ai-send[disabled] { opacity: 0.5; pointer-events: none; }
+
+  /* caption below phone */
+  .caption {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+</style>
+
+<div class="ambient">
+  <div class="blob blob--orange"></div>
+  <div class="blob blob--teal"></div>
+  <div class="blob blob--faint"></div>
+</div>
+
+<svg class="grain" width="100%" height="100%">
+  <filter id="noiseFilter">
+    <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence>
+    <feColorMatrix type="saturate" values="0"></feColorMatrix>
+  </filter>
+  <rect width="100%" height="100%" filter="url(#noiseFilter)"></rect>
+</svg>
+
+<div class="device">
+  <div class="screen">
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <linearGradient id="gaugeGradient" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f2891c"/>
+          <stop offset="100%" stop-color="#3fb2bd"/>
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="island"></div>
+    <div class="statusbar">
+      <span>9:41</span>
+      <svg viewBox="0 0 20 12" width="20" height="12" fill="none"><rect x="0" y="8" width="3" height="4" rx="0.5" fill="currentColor"/><rect x="5" y="5" width="3" height="7" rx="0.5" fill="currentColor"/><rect x="10" y="2" width="3" height="10" rx="0.5" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="0.5" fill="currentColor" opacity="0.4"/></svg>
+    </div>
+
+    <div class="content" id="content">
+
+      <!-- ===== AUTH · LANDING ===== -->
+      <section class="app-view auth-view" id="view-auth-landing">
+        <div class="auth-splash">
+          <div class="auth-hero">
+            <span class="auth-logo" data-logo></span>
+            <div class="auth-tagline">Innovando la experiencia sensorial</div>
+          </div>
+
+          <div class="auth-benefits">
+            <div class="auth-benefit">
+              <div class="ab-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
+              <div><div class="ab-t">Sesiones sensoriales</div><div class="ab-s">Cinco sentidos, pruebas guiadas</div></div>
+            </div>
+            <div class="auth-benefit">
+              <div class="ab-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7Z"/><path d="M12 22V12M3 7l9 5 9-5"/></svg></div>
+              <div><div class="ab-t">Puntos, niveles e insignias</div><div class="ab-s">Tu progreso, medido de verdad</div></div>
+            </div>
+            <div class="auth-benefit">
+              <div class="ab-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+              <div><div class="ab-t">Comunidad y ranking</div><div class="ab-s">Compite semana a semana</div></div>
+            </div>
+          </div>
+
+          <div class="auth-actions">
+            <button class="auth-btn primary" id="goRegister" type="button">Crear cuenta</button>
+            <button class="auth-btn ghost" id="goLogin" type="button">Ya tengo cuenta</button>
+            <button class="auth-btn link" id="goDemo" type="button">Explorar como invitado</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== AUTH · REGISTRO ===== -->
+      <section class="app-view auth-view" id="view-auth-register">
+        <div class="auth-top">
+          <button class="auth-back" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+          <div class="auth-steps" data-steps="1">
+            <span class="auth-step-dot active"></span><span class="auth-step-dot"></span><span class="auth-step-dot"></span>
+          </div>
+          <span class="auth-step-label">Paso 1 / 3</span>
+        </div>
+        <h1 class="auth-h">Crea tu cuenta</h1>
+        <p class="auth-p">Con tu correo basta. El teléfono es opcional.</p>
+
+        <div class="fld">
+          <label class="fld-label" for="regName">Nombre</label>
+          <div class="fld-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+            <input class="fld-input" id="regName" type="text" autocomplete="name" placeholder="Tu nombre">
+          </div>
+        </div>
+        <div class="fld">
+          <label class="fld-label" for="regEmail">Correo</label>
+          <div class="fld-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input class="fld-input" id="regEmail" type="email" autocomplete="email" inputmode="email" placeholder="tu@correo.com">
+          </div>
+        </div>
+        <div class="fld">
+          <label class="fld-label" for="regPhone">Teléfono <span style="text-transform:none;font-weight:500;color:var(--text-tertiary)">· opcional</span></label>
+          <div class="fld-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/></svg>
+            <input class="fld-input" id="regPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+52 …">
+          </div>
+        </div>
+        <button class="auth-btn primary" id="regSubmit" type="button" style="margin-top:8px;">Enviar código</button>
+      </section>
+
+      <!-- ===== AUTH · LOGIN (código) ===== -->
+      <section class="app-view auth-view" id="view-auth-login">
+        <div class="auth-top">
+          <button class="auth-back" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+          <span class="auth-step-label" style="margin-left:auto">Iniciar sesión</span>
+        </div>
+        <h1 class="auth-h">Bienvenido de vuelta</h1>
+        <p class="auth-p">Te enviamos un código de un solo uso a tu correo.</p>
+
+        <div class="fld">
+          <label class="fld-label" for="loginEmail">Correo</label>
+          <div class="fld-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input class="fld-input" id="loginEmail" type="email" autocomplete="email" inputmode="email" placeholder="tu@correo.com">
+          </div>
+        </div>
+        <button class="auth-btn primary" id="loginSubmit" type="button">Enviar código</button>
+      </section>
+
+      <!-- ===== AUTH · VERIFICACIÓN ===== -->
+      <section class="app-view auth-view" id="view-auth-verify">
+        <div class="auth-top">
+          <button class="auth-back" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+          <div class="auth-steps">
+            <span class="auth-step-dot done"></span><span class="auth-step-dot active"></span><span class="auth-step-dot"></span>
+          </div>
+          <span class="auth-step-label">Paso 1 / 3</span>
+        </div>
+        <h1 class="auth-h">Verifica tu correo</h1>
+        <p class="auth-p">Escribe el código de 6 dígitos enviado a <b id="verifyEmail">—</b>.</p>
+
+        <div class="otp-row" id="otpRow">
+          <input class="otp-cell" inputmode="numeric" maxlength="1" aria-label="dígito 1">
+          <input class="otp-cell" inputmode="numeric" maxlength="1" aria-label="dígito 2">
+          <input class="otp-cell" inputmode="numeric" maxlength="1" aria-label="dígito 3">
+          <input class="otp-cell" inputmode="numeric" maxlength="1" aria-label="dígito 4">
+          <input class="otp-cell" inputmode="numeric" maxlength="1" aria-label="dígito 5">
+          <input class="otp-cell" inputmode="numeric" maxlength="1" aria-label="dígito 6">
+        </div>
+        <div><span class="auth-devhint" id="verifyHint" hidden></span></div>
+        <div><button class="auth-resend" id="verifyResend" type="button">Reenviar código</button></div>
+        <button class="auth-btn primary" id="verifySubmit" type="button" style="margin-top:16px;">Verificar</button>
+      </section>
+
+      <!-- ===== ONBOARDING · PERFIL SENSORIAL ===== -->
+      <section class="app-view auth-view" id="view-onb-perfil">
+        <div class="auth-top">
+          <div class="auth-steps">
+            <span class="auth-step-dot done"></span><span class="auth-step-dot active"></span><span class="auth-step-dot"></span>
+          </div>
+          <span class="auth-step-label">Paso 2 / 3</span>
+        </div>
+        <h1 class="auth-h">Tu perfil sensorial</h1>
+        <p class="auth-p">Nos dice qué sesiones son seguras y relevantes para ti.</p>
+
+        <div class="onb-card">
+          <p class="onb-card-h">¿De dónde eres?</p>
+          <p class="onb-card-s">Para agrupar resultados por región.</p>
+          <div class="fld">
+            <label class="fld-label" for="onbCountry">País</label>
+            <select class="fld-select no-ic" id="onbCountry">
+              <option value="México" selected>México</option>
+              <option value="Argentina">Argentina</option>
+              <option value="Colombia">Colombia</option>
+              <option value="Chile">Chile</option>
+              <option value="Perú">Perú</option>
+              <option value="España">España</option>
+              <option value="Estados Unidos">Estados Unidos</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="fld">
+            <label class="fld-label" for="onbCity">Ciudad</label>
+            <input class="fld-input no-ic" id="onbCity" type="text" placeholder="Monterrey">
+          </div>
+          <div class="fld" style="margin-bottom:0;">
+            <label class="fld-label" for="onbDob">Fecha de nacimiento <span style="text-transform:none;font-weight:500;color:var(--text-tertiary)">· opcional</span></label>
+            <input class="fld-input no-ic" id="onbDob" type="date">
+          </div>
+        </div>
+
+        <div class="onb-card">
+          <p class="onb-card-h">¿Algo que debamos cuidar?</p>
+          <p class="onb-card-s">Bloqueamos automáticamente las sesiones que no apliquen.</p>
+          <div class="fld">
+            <span class="fld-label">Restricciones alimentarias</span>
+            <div class="chip-wrap" id="onbDiet">
+              <span class="chip-select" data-val="gluten">Gluten</span>
+              <span class="chip-select" data-val="lactosa">Lactosa</span>
+              <span class="chip-select" data-val="soya">Soya</span>
+              <span class="chip-select" data-val="vegano">Vegano</span>
+              <span class="chip-select" data-val="kosher">Kosher</span>
+            </div>
+          </div>
+          <div class="fld" style="margin-bottom:0;">
+            <span class="fld-label">Alergias</span>
+            <div class="chip-wrap" id="onbAllergy">
+              <span class="chip-select" data-val="nueces">Nueces</span>
+              <span class="chip-select" data-val="mani">Maní</span>
+              <span class="chip-select" data-val="mariscos">Mariscos</span>
+              <span class="chip-select" data-val="citrico">Cítricos</span>
+              <span class="chip-select" data-val="huevo">Huevo</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="onb-card">
+          <p class="onb-card-h">Tus preferencias</p>
+          <div class="fld">
+            <span class="fld-label">Intensidad sensorial preferida</span>
+            <div class="seg" id="onbIntensity" data-val="media">
+              <span class="seg-opt" data-val="baja">Baja</span>
+              <span class="seg-opt on" data-val="media">Media</span>
+              <span class="seg-opt" data-val="alta">Alta</span>
+            </div>
+          </div>
+          <div class="onb-toggle-row">
+            <div><div class="otr-t">¿Fumas?</div><div class="otr-s">Afecta la calibración olfativa</div></div>
+            <div class="toggle" id="onbSmoker"></div>
+          </div>
+        </div>
+
+        <button class="auth-btn primary" id="onbPerfilSubmit" type="button" style="margin-top:4px;">Guardar y continuar</button>
+      </section>
+
+      <!-- ===== ONBOARDING · CONSENTIMIENTO ===== -->
+      <section class="app-view auth-view" id="view-onb-consent">
+        <div class="auth-top">
+          <div class="auth-steps">
+            <span class="auth-step-dot done"></span><span class="auth-step-dot done"></span><span class="auth-step-dot active"></span>
+          </div>
+          <span class="auth-step-label">Paso 3 / 3</span>
+        </div>
+        <h1 class="auth-h">Un último paso</h1>
+        <p class="auth-p">Tu consentimiento para operar el programa.</p>
+
+        <div class="consent-box">
+          SensoLab Community registra tus respuestas y tu progreso para operar el
+          programa de pruebas sensoriales y calcular tus puntos. No compartimos
+          datos personales identificables con terceros salvo tu consentimiento
+          explícito para estudios del socio formador.
+        </div>
+
+        <label class="consent-check">
+          <input type="checkbox" id="consentData">
+          <span>Acepto el uso de mis datos para operar SensoLab Community.</span>
+        </label>
+        <label class="consent-check">
+          <input type="checkbox" id="consentStudy">
+          <span>Acepto que mis resultados anónimos se usen en estudios del socio formador. <span class="cc-opt">(opcional)</span></span>
+        </label>
+
+        <button class="auth-btn primary" id="onbConsentSubmit" type="button" style="margin-top:20px;">Entrar a SensoLab</button>
+      </section>
+
+      <!-- ===== HOME ===== -->
+      <section class="app-view active" id="view-home">
+        <div class="home-header">
+          <div>
+            <p class="eyebrow" id="homeGreeting">Buenas tardes</p>
+            <h1 class="page-title" id="homeName">—</h1>
+          </div>
+          <div class="avatar" id="homeAvatar">SL</div>
+        </div>
+
+        <div class="gauge-card">
+          <div class="gauge-wrap">
+            <svg viewBox="0 0 100 100" width="108" height="108">
+              <circle class="gauge-track" cx="50" cy="50" r="45"/>
+              <circle class="gauge-fill" id="gaugeFill" cx="50" cy="50" r="45"/>
+            </svg>
+            <div class="gauge-center">
+              <div class="gauge-num" id="gaugeNum">0</div>
+              <div class="gauge-label" id="gaugeMaxLabel">de 1000</div>
+            </div>
+          </div>
+          <div class="gauge-copy">
+            <div class="level-name" id="levelName">—</div>
+            <div class="level-sub" id="levelSub">—</div>
+            <div class="pill" id="weeklyPill">↑ +0 pts esta semana</div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat"><div class="num" id="statSesiones">0</div><div class="lbl">Sesiones</div></div>
+          <div class="stat"><div class="num" id="statRacha">0</div><div class="lbl">Racha (días)</div></div>
+          <div class="stat"><div class="num" id="statRanking">—</div><div class="lbl">Ranking</div></div>
+        </div>
+
+        <div class="cta-card" id="ctaCardHome">
+          <h3 id="ctaTitle">Sesión sensorial de hoy</h3>
+          <p id="ctaDesc">Cargando…</p>
+          <button class="btn" id="ctaBtn" type="button">Iniciar ahora →</button>
+        </div>
+
+        <div class="section-head">
+          <h2>Actividad reciente</h2>
+        </div>
+        <div id="activityList">
+          <div class="empty-note">Sin actividad todavía.</div>
+        </div>
+      </section>
+
+      <!-- ===== SESIONES ===== -->
+      <section class="app-view" id="view-sesiones">
+        <p class="eyebrow">Laboratorio</p>
+        <h1 class="page-title">Sesiones sensoriales</h1>
+        <p class="sub">Cinco sentidos, cinco formas de sumar puntos.</p>
+
+        <div class="remote-entry" id="remoteEntry" role="button" tabindex="0"
+             onclick="SLRemoteOpen && SLRemoteOpen()">
+          <div class="sense-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a2 2 0 0 1 2-2h2"/><path d="M16 3h2a2 2 0 0 1 2 2v2"/><path d="M20 17v2a2 2 0 0 1-2 2h-2"/><path d="M8 21H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>
+          </div>
+          <div class="re-body">
+            <div class="re-title">Sesiones a distancia</div>
+            <div class="re-sub" id="remoteEntrySub">Kit a domicilio + evidencia guiada</div>
+          </div>
+          <div class="re-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div>
+        </div>
+
+        <div id="sessionsList" style="margin-top:20px;">
+          <div class="empty-note">Cargando sesiones…</div>
+        </div>
+      </section>
+
+      <!-- ===== COMUNIDAD ===== -->
+      <section class="app-view" id="view-comunidad">
+        <p class="eyebrow">SensoLab Community</p>
+        <h1 class="page-title">Ranking semanal</h1>
+        <p class="sub">Los catadores más activos de la comunidad.</p>
+
+        <div id="leaderboardList" style="margin-top:20px;">
+          <div class="empty-note">Cargando ranking…</div>
+        </div>
+      </section>
+
+      <!-- ===== PERFIL ===== -->
+      <section class="app-view" id="view-perfil">
+        <div class="profile-head">
+          <div class="avatar-lg" id="profileAvatar">SL</div>
+          <h1 class="page-title" id="profileName">—</h1>
+          <p class="sub" id="profileSub">—</p>
+        </div>
+
+        <div class="section-head" style="margin-top:22px;"><h2>Insignias</h2></div>
+        <div class="badge-grid" id="badgeGrid">
+          <div class="empty-note">Sin insignias todavía.</div>
+        </div>
+
+        <div class="settings-list">
+          <div class="settings-row" onclick="pushView('view-notificaciones','view-perfil')">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <span>Notificaciones</span>
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+          <div class="settings-row" onclick="pushView('view-preferencias','view-perfil')">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.7.7 1.2 1.5 1.4h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+            <span>Preferencias sensoriales</span>
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+          <div class="settings-row" id="logoutRow">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+            <span>Cerrar sesión</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SESIÓN ACTIVA (pushed, not a tab) ===== -->
+      <section class="app-view push-view" id="view-sesion-activa">
+        <div class="push-header">
+          <button class="back-btn" onclick="popView('view-sesiones')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div>
+            <p class="eyebrow" style="margin:0;">Sesión en curso</p>
+          </div>
+        </div>
+        <h1 class="page-title" id="activeTitle">Sesión</h1>
+        <p class="sub" id="activeSub">Evalúa las muestras y registra tu percepción.</p>
+
+        <div class="timer-ring-wrap">
+          <div style="text-align:center;">
+            <div class="timer-num" id="timerNum">02:00</div>
+            <div class="timer-sub">tiempo restante</div>
+          </div>
+        </div>
+
+        <div class="session-info-card">
+          <div class="step">
+            <div class="step-num">1</div>
+            <p><b>Muestra A–E:</b> prueba cada una en orden, sin enjuague entre ellas.</p>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <p><b>Registra intensidad:</b> del 1 al 5, ¿qué tan marcada es la percepción?</p>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <p><b>Comentario libre:</b> describe cualquier matiz secundario que percibas.</p>
+          </div>
+        </div>
+
+        <button class="btn-complete" id="btnComplete" type="button">Completar sesión</button>
+      </section>
+
+      <!-- ===== NOTIFICACIONES (pushed) ===== -->
+      <section class="app-view push-view" id="view-notificaciones">
+        <div class="push-header">
+          <button class="back-btn" onclick="popView('view-perfil')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div><p class="eyebrow" style="margin:0;">Perfil</p></div>
+        </div>
+        <h1 class="page-title">Notificaciones</h1>
+        <p class="sub">Lo último de tu actividad en SensoLab Community.</p>
+
+        <div id="notifList" style="margin-top:18px;">
+          <div class="empty-note">Sin notificaciones.</div>
+        </div>
+      </section>
+
+      <!-- ===== PREFERENCIAS SENSORIALES (pushed) ===== -->
+      <section class="app-view push-view" id="view-preferencias">
+        <div class="push-header">
+          <button class="back-btn" onclick="popView('view-perfil')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div><p class="eyebrow" style="margin:0;">Perfil</p></div>
+        </div>
+        <h1 class="page-title">Preferencias sensoriales</h1>
+        <p class="sub">Ajusta cómo y cuándo participas en el laboratorio.</p>
+
+        <div class="settings-list" style="margin-top:18px; padding: 4px 14px;">
+          <div class="pref-row">
+            <div class="pref-text"><div class="ptitle">Notificaciones push</div><div class="psub">Avisos de nuevas sesiones</div></div>
+            <div class="toggle" data-pref="pushEnabled"></div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-text"><div class="ptitle">Sonido en sesiones</div><div class="psub">Para pruebas de Experiencia Sonora</div></div>
+            <div class="toggle" data-pref="soundEnabled"></div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-text"><div class="ptitle">Modo alto contraste</div><div class="psub">Refuerza el contraste AAA en toda la app</div></div>
+            <div class="toggle" data-pref="highContrast"></div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-text"><div class="ptitle">Recordatorios diarios</div><div class="psub">7:00 pm, días con sesión pendiente</div></div>
+            <div class="toggle" data-pref="dailyReminders"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== REMOTO · HUB (pushed) ===== -->
+      <section class="app-view push-view" id="view-remoto">
+        <div class="push-header">
+          <button class="back-btn" onclick="popView('view-sesiones')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div><p class="eyebrow" style="margin:0;">Laboratorio</p></div>
+        </div>
+        <h1 class="page-title">Sesiones a distancia</h1>
+        <p class="sub">Recibe el kit en casa y completa la prueba con evidencia guiada.</p>
+
+        <div id="remotoReviewStrip" hidden></div>
+        <div id="remotoList" style="margin-top:18px;">
+          <div class="empty-note">Cargando sesiones remotas…</div>
+        </div>
+        <div class="r-note">
+          La validez de los datos depende de condiciones no supervisadas. El envío
+          de evidencia sustituye al control del laboratorio; algunos intentos pasan
+          a revisión manual antes de acreditar puntos.
+        </div>
+      </section>
+
+      <!-- ===== REMOTO · KIT (pushed) ===== -->
+      <section class="app-view push-view" id="view-remoto-kit">
+        <div class="push-header">
+          <button class="back-btn" onclick="SL.showView('view-remoto')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div><p class="eyebrow" style="margin:0;">Sesión a distancia</p></div>
+        </div>
+        <h1 class="page-title" id="kitTitle">Kit</h1>
+        <p class="sub" id="kitSub">Solicita el kit para habilitar la sesión.</p>
+
+        <div id="kitRequestBlock">
+          <div class="r-field-label">Dirección de envío</div>
+          <textarea class="r-textarea" id="kitAddr" placeholder="Calle y número, colonia, ciudad, CP, referencias"></textarea>
+          <button class="btn-complete" id="kitRequestBtn" type="button" style="margin-top:14px;">Solicitar kit</button>
+        </div>
+
+        <div id="kitTrackBlock" hidden>
+          <div class="ship-track" id="kitTracker"></div>
+          <button class="btn-complete" id="kitConfirmBtn" type="button" disabled>Confirmar recepción</button>
+          <div class="r-note" id="kitConfirmNote">
+            Confirma solo cuando el kit esté físicamente contigo y sin abrir.
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== REMOTO · CHECKLIST (pushed) ===== -->
+      <section class="app-view push-view" id="view-remoto-checklist">
+        <div class="push-header">
+          <button class="back-btn" onclick="SL.showView('view-remoto')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div><p class="eyebrow" style="margin:0;">Antes de empezar</p></div>
+        </div>
+        <h1 class="page-title" id="rcTitle">Prepara tu entorno</h1>
+        <p class="sub">Marca cada punto y adjunta una foto de tu espacio de prueba.</p>
+
+        <div id="rcChecklist" style="margin-top:16px;"></div>
+
+        <label class="r-drop" id="rcSetupDrop">
+          <input type="file" id="rcSetupInput" accept="image/*">
+          <div class="rd-title" id="rcSetupTitle">Foto del setup</div>
+          <div class="rd-sub">Muestra la mesa, la luz y el kit sin abrir</div>
+        </label>
+
+        <button class="btn-complete" id="rcStartBtn" type="button" style="margin-top:16px;" disabled>Iniciar sesión</button>
+      </section>
+
+      <!-- ===== REMOTO · EJECUCIÓN (pushed) ===== -->
+      <section class="app-view push-view" id="view-remoto-activa">
+        <div class="push-header">
+          <div><p class="eyebrow" style="margin:0;">Sesión en curso · a distancia</p></div>
+        </div>
+        <h1 class="page-title" id="raTitle">Sesión</h1>
+        <p class="sub" id="raSub">Sigue los pasos. El tiempo lo lleva el servidor.</p>
+
+        <div class="timer-ring-wrap">
+          <div style="text-align:center;">
+            <div class="timer-num" id="rTimerNum">00:00</div>
+            <div class="timer-sub" id="rTimerSub">tiempo transcurrido</div>
+          </div>
+        </div>
+
+        <div class="session-info-card" id="rSteps"></div>
+
+        <button class="btn-complete" id="rToSubmitBtn" type="button">Terminé · registrar evidencia</button>
+      </section>
+
+      <!-- ===== REMOTO · ENVÍO (pushed) ===== -->
+      <section class="app-view push-view" id="view-remoto-submit">
+        <div class="push-header">
+          <button class="back-btn" onclick="SL.showView('view-remoto-activa')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div><p class="eyebrow" style="margin:0;">Evidencia + respuestas</p></div>
+        </div>
+        <h1 class="page-title">Registra tu evidencia</h1>
+        <p class="sub" id="rsSub">Adjunta la captura final y responde.</p>
+
+        <label class="r-drop" id="rsMediaDrop">
+          <input type="file" id="rsMediaInput">
+          <div class="rd-title" id="rsMediaTitle">Media de evidencia</div>
+          <div class="rd-sub" id="rsMediaSub">Foto o audio según el sentido evaluado</div>
+        </label>
+
+        <div class="r-field-label">Tus respuestas</div>
+        <textarea class="r-textarea" id="rsAnswers" placeholder="Intensidad por muestra, familias percibidas, notas libres…"></textarea>
+
+        <label class="r-consent-row">
+          <input type="checkbox" id="rsGeo">
+          <span>Compartir mi ubicación aproximada como señal opcional de consistencia (no obligatoria).</span>
+        </label>
+
+        <button class="btn-complete" id="rsSubmitBtn" type="button" style="margin-top:16px;">Enviar para validación</button>
+      </section>
+
+      <!-- ===== REMOTO · RESULTADO (pushed) ===== -->
+      <section class="app-view push-view" id="view-remoto-resultado">
+        <div class="push-header">
+          <button class="back-btn" onclick="SL.showView('view-remoto')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div><p class="eyebrow" style="margin:0;">Validación</p></div>
+        </div>
+
+        <div class="r-result-wrap">
+          <div class="r-result-icon" id="rResIcon"></div>
+          <h1 class="page-title" id="rResTitle" style="margin:0;">—</h1>
+          <p class="sub" id="rResBody" style="margin-top:8px;">—</p>
+        </div>
+
+        <div class="r-meter" id="rResMeterWrap" hidden>
+          <div class="r-meter-track"><div class="r-meter-fill" id="rResMeterFill" style="width:0%"></div></div>
+          <div class="r-meter-label"><span>integrity_score</span><span id="rResMeterVal">0</span></div>
+        </div>
+
+        <div class="r-note" id="rResNote" hidden></div>
+        <button class="btn-complete" id="rResBackBtn" type="button" style="margin-top:20px;" onclick="SL.showView('view-remoto')">Volver a sesiones a distancia</button>
+      </section>
+
+      <!-- ===== REMOTO · COLA DE REVISIÓN (pushed) ===== -->
+      <section class="app-view push-view" id="view-remoto-cola">
+        <div class="push-header">
+          <button class="back-btn" onclick="SL.showView('view-remoto')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <div><p class="eyebrow" style="margin:0;">Revisor</p></div>
+        </div>
+        <h1 class="page-title">Cola de revisión</h1>
+        <p class="sub">Intentos en rango ambiguo. Aprueba o rechaza con criterio.</p>
+
+        <div id="rQueue" style="margin-top:16px;">
+          <div class="empty-note">Cargando cola…</div>
+        </div>
+      </section>
+
+    </div>
+
+    <button class="ai-fab hidden" id="aiFab" type="button" aria-label="Asistente SensoLab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a7 7 0 0 1 7 7v1a7 7 0 0 1-7 7H8l-4 3v-4a7 7 0 0 1-1-3.5V10a7 7 0 0 1 7-7Z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></svg>
+    </button>
+
+    <section class="ai-panel" id="aiPanel" aria-hidden="true">
+      <div class="ai-head">
+        <div class="ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a7 7 0 0 1 7 7v1a7 7 0 0 1-7 7H8l-4 3v-4a7 7 0 0 1-1-3.5V10a7 7 0 0 1 7-7Z"/></svg></div>
+        <div class="ai-ttl"><b>Asistente SensoLab</b><span>Dudas sobre la app, sesiones y puntos</span></div>
+        <button class="ai-close" id="aiClose" type="button" aria-label="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="ai-body" id="aiBody"></div>
+      <div class="ai-suggest" id="aiSuggest">
+        <span class="ai-chip">¿Cómo gano puntos?</span>
+        <span class="ai-chip">¿Qué son los niveles?</span>
+        <span class="ai-chip">¿Por qué hay sesiones bloqueadas?</span>
+        <span class="ai-chip">¿Cómo funcionan las pruebas a distancia?</span>
+      </div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="aiInput" type="text" placeholder="Escribe tu pregunta…" autocomplete="off">
+        <button class="ai-send" id="aiSend" type="button" aria-label="Enviar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <div class="toast" id="toast">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      <span id="toastText">+50 pts</span>
+    </div>
+
+    <nav class="tabbar">
+      <button class="tab active" data-view="view-home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+        Inicio
+        <span class="tab-dot"></span>
+      </button>
+      <button class="tab" data-view="view-sesiones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        Sesiones
+        <span class="tab-dot"></span>
+      </button>
+      <button class="tab" data-view="view-comunidad">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Comunidad
+        <span class="tab-dot"></span>
+      </button>
+      <button class="tab" data-view="view-perfil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+        Perfil
+        <span class="tab-dot"></span>
+      </button>
+    </nav>
+
+    <div class="home-indicator"></div>
+
+    <div class="boot-overlay" id="bootOverlay">
+      <div class="boot-spinner" id="bootSpinner"></div>
+      <div class="bmsg" id="bootMsg">Conectando con el laboratorio…</div>
+      <div class="bcode" id="bootCode" hidden>cd backend &amp;&amp; npm start</div>
+      <button id="bootRetry" hidden>Reintentar</button>
+    </div>
+  </div>
+</div>
+
+<div class="caption">SensoLab Community — prototipo iOS</div>
+
+<script>
+  // =======================================================================
+  //  Config + estado
+  // =======================================================================
+  // Mismo origen cuando la sirve el backend (http://localhost:4000/).
+  // Para servir el HTML desde otro puerto, define window.SENSOLAB_API antes.
+  const API = (window.SENSOLAB_API || '') + '/api';
+  const TOKEN_KEY = 'sensolab_token';
+  const DEMO = { email: 'joshua@sensolab.dev', password: 'demo1234' };
+
+  const state = {
+    token: localStorage.getItem(TOKEN_KEY) || null,
+    me: null,
+    sessions: [],
+    leaderboard: [],
+    activity: [],
+    notifications: [],
+    prefs: null,
+    currentSlug: null,
+  };
+
+  const GAUGE_CIRCUMFERENCE = 283;
+  const $ = (id) => document.getElementById(id);
+
+  // =======================================================================
+  //  Capa de red
+  // =======================================================================
+  async function api(path, { method = 'GET', body, auth = true } = {}) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (auth && state.token) headers.Authorization = 'Bearer ' + state.token;
+
+    const res = await fetch(API + path, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    let data = null;
+    try { data = await res.json(); } catch { /* respuesta sin cuerpo */ }
+
+    if (!res.ok) {
+      const err = new Error((data && data.error) || `HTTP ${res.status}`);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
+  async function demoLogin() {
+    const data = await api('/auth/login', { method: 'POST', body: DEMO, auth: false });
+    state.token = data.token;
+    localStorage.setItem(TOKEN_KEY, data.token);
+    state.me = data.user;
+  }
+
+  // =======================================================================
+  //  Iconos (reutilizan los trazos del prototipo)
+  // =======================================================================
+  const strokeSvg = (inner, w = 24) =>
+    `<svg viewBox="0 0 ${w} ${w}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+
+  const SENSE = {
+    taste: { cls: 'icon-taste', svg: '<path d="M6 3c0 4-3 5-3 9a6 6 0 0 0 12 0c0-1.5-.5-2.5-1.2-3.5"/><path d="M13 3c0 3-2 4.5-2 7"/>' },
+    sound: { cls: 'icon-sound', svg: '<path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 7v10"/><path d="M19 10v4"/>' },
+    touch: { cls: 'icon-touch', svg: '<path d="M9 12V6a2 2 0 1 1 4 0"/><path d="M13 6a2 2 0 1 1 4 0v5"/><path d="M17 6a2 2 0 1 1 4 0v7c0 4-2.5 7-6 7-3 0-4.5-1.2-6-3l-3.2-4.6c-.5-.8-.2-1.9.7-2.2.6-.2 1.3 0 1.7.5L11 13"/>' },
+    smell: { cls: 'icon-smell', svg: '<path d="M16 3c1 2 1 4-.5 6M19 6c1.3 1.7 1.3 3.6 0 5.4"/><path d="M9 4a3 3 0 0 0-3 3v6a6 6 0 0 0 12 0"/><path d="M6 13a6 6 0 0 0 6 6"/>' },
+    sight: { cls: 'icon-sight', svg: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>' },
+  };
+  const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+  const NOTIF_ICON = {
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+    bolt: '<path d="M13 2 3 14h7l-1 8 11-14h-7l1-6Z"/>',
+    users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>',
+    shield: '<path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6l-8-4Z"/>',
+  };
+  const BADGE_ICON = {
+    shield: '<path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6l-8-4Z"/>',
+    bolt: '<path d="M13 2 3 14h7l-1 8 11-14h-7l1-6Z"/>',
+    smell: '<path d="M16 3c1 2 1 4-.5 6M9 4a3 3 0 0 0-3 3v6a6 6 0 0 0 12 0"/><path d="M6 13a6 6 0 0 0 6 6"/>',
+  };
+
+  const escapeHtml = (s) =>
+    String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmtNum = (n) => Number(n).toLocaleString('es-MX');
+
+  function relTime(iso) {
+    const then = new Date(iso).getTime();
+    if (Number.isNaN(then)) return '';
+    const mins = Math.round((Date.now() - then) / 60000);
+    if (mins < 1) return 'Ahora';
+    if (mins < 60) return `Hace ${mins} min`;
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return `Hace ${hrs} h`;
+    const days = Math.round(hrs / 24);
+    if (days === 1) return 'Ayer';
+    if (days < 7) return `Hace ${days} d`;
+    return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+  }
+
+  // =======================================================================
+  //  Render
+  // =======================================================================
+  function renderAll() {
+    renderHome();
+    renderSessions();
+    renderLeaderboard();
+    renderNotifications();
+    renderPrefs();
+    renderProfile();
+  }
+
+  function renderHome() {
+    const me = state.me;
+    if (!me) return;
+
+    $('homeGreeting').textContent = greeting();
+    $('homeName').textContent = me.name.split(/\s+/)[0];
+    $('homeAvatar').textContent = me.initials;
+
+    $('gaugeNum').textContent = fmtNum(me.points);
+    $('gaugeMaxLabel').textContent = me.nextLevelAt ? `de ${fmtNum(me.nextLevelAt)}` : 'máx.';
+    $('levelName').textContent = `Nivel ${me.level} · ${me.levelName}`;
+    $('levelSub').textContent = me.nextLevelName
+      ? `Te faltan ${fmtNum(me.pointsToNext)} pts para "${me.nextLevelName}"`
+      : 'Nivel máximo alcanzado 🎉';
+    $('weeklyPill').textContent = `↑ +${fmtNum(me.weeklyDelta)} pts esta semana`;
+
+    $('statSesiones').textContent = me.sessionsCompleted;
+    $('statRacha').textContent = me.streakDays;
+    $('statRanking').textContent = me.rank != null ? `#${me.rank}` : '—';
+
+    updateGauge();
+
+    // CTA: primera sesión disponible o en progreso
+    const next = state.sessions.find((s) => s.status === 'in_progress')
+      || state.sessions.find((s) => s.status === 'available');
+    const btn = $('ctaBtn');
+    if (next) {
+      $('ctaTitle').textContent = next.status === 'in_progress'
+        ? 'Continúa tu sesión' : 'Sesión sensorial de hoy';
+      $('ctaDesc').textContent =
+        `${next.name} · ${next.durationMin} min · +${next.points} pts`;
+      btn.textContent = next.status === 'in_progress' ? 'Continuar →' : 'Iniciar ahora →';
+      btn.disabled = false;
+      btn.onclick = () => openSession(next.slug);
+    } else {
+      $('ctaTitle').textContent = 'Todo al día';
+      $('ctaDesc').textContent = 'No hay sesiones pendientes por ahora.';
+      btn.disabled = true;
+    }
+
+    // Actividad
+    const list = $('activityList');
+    if (!state.activity.length) {
+      list.innerHTML = '<div class="empty-note">Sin actividad todavía.</div>';
+    } else {
+      list.innerHTML = state.activity.map((a) => `
+        <div class="activity-row">
+          <div class="activity-dot"></div>
+          <div class="activity-text">${a.text}</div>
+          <div class="activity-time">${relTime(a.createdAt)}</div>
+        </div>`).join('');
+    }
+  }
+
+  function updateGauge() {
+    const me = state.me;
+    if (!me) return;
+    const max = me.nextLevelAt || me.points || 1;
+    const pct = Math.max(0, Math.min(me.points / max, 1));
+    $('gaugeFill').style.strokeDashoffset = String(GAUGE_CIRCUMFERENCE * (1 - pct));
+  }
+
+  const SESSION_GROUPS = [
+    { key: 'in_progress', title: 'En progreso', match: (s) => s.status === 'in_progress' },
+    { key: 'available', title: 'Disponibles', match: (s) => s.status === 'available' },
+    { key: 'completed', title: 'Completadas', match: (s) => s.status === 'completed' },
+    { key: 'locked', title: 'Bloqueadas', match: (s) => s.status === 'locked' },
+  ];
+
+  function lockLabel(s) {
+    if (s.lockedReason === 'prereq') {
+      return `REQUIERE ${String(s.prerequisiteSlug || '').replace(/-/g, ' ').toUpperCase()}`;
+    }
+    if (s.lockedReason === 'sensory') return 'PERFIL';
+    return `NIVEL ${s.requiredLevel}`;
+  }
+
+  function sessionChip(s) {
+    if (s.status === 'available') return `<div class="status-chip chip-open">+${s.points} PTS</div>`;
+    if (s.status === 'in_progress') return `<div class="status-chip chip-progress">${s.progressPct}%</div>`;
+    if (s.status === 'completed') return `<div class="status-chip chip-done">✓ +${s.pointsAwarded || s.points}</div>`;
+    return `<div class="status-chip chip-locked">${LOCK_SVG} ${lockLabel(s)}</div>`;
+  }
+
+  function renderSessions() {
+    const host = $('sessionsList');
+    if (!state.sessions.length) {
+      host.innerHTML = '<div class="empty-note">No hay sesiones en el catálogo.</div>';
+      return;
+    }
+    let html = '';
+    let delay = 0.02;
+    for (const g of SESSION_GROUPS) {
+      const items = state.sessions.filter(g.match);
+      if (!items.length) continue;
+      html += `<div class="section-head"><h2>${g.title}</h2></div>`;
+      for (const s of items) {
+        const sense = SENSE[s.sense] || SENSE.taste;
+        const actionable = s.status === 'available' || s.status === 'in_progress';
+        html += `
+          <div class="session-card${actionable ? ' is-actionable' : ''}"
+               style="animation-delay:${delay.toFixed(2)}s"
+               ${actionable ? `data-slug="${s.slug}"` : ''}>
+            <div class="sense-icon ${sense.cls}">${strokeSvg(sense.svg)}</div>
+            <div class="session-body">
+              <div class="name">${escapeHtml(s.name)}</div>
+              <div class="desc">${escapeHtml(s.description)} · ${s.durationMin} min</div>
+            </div>
+            ${sessionChip(s)}
+          </div>`;
+        delay += 0.06;
+      }
+    }
+    host.innerHTML = html;
+    host.querySelectorAll('.session-card[data-slug]').forEach((el) => {
+      el.addEventListener('click', () => openSession(el.dataset.slug));
+    });
+  }
+
+  function renderLeaderboard() {
+    const host = $('leaderboardList');
+    if (!state.leaderboard.length) {
+      host.innerHTML = '<div class="empty-note">Ranking no disponible.</div>';
+      return;
+    }
+    host.innerHTML = state.leaderboard.map((r, i) => `
+      <div class="rank-row${r.isMe ? ' me' : ''}${r.rank <= 3 ? ' top' : ''}"
+           style="animation-delay:${(0.02 + i * 0.05).toFixed(2)}s">
+        <div class="rank-num">${r.rank}</div>
+        <div class="rank-avatar">${escapeHtml(r.initials)}</div>
+        <div class="rank-body">
+          <div class="rname">${escapeHtml(r.name)}${r.isMe ? ' · Tú' : ''}</div>
+          <div class="rlevel">Nivel ${r.level} · ${escapeHtml(r.levelName)}</div>
+        </div>
+        <div class="rank-pts">${fmtNum(r.points)}</div>
+      </div>`).join('');
+  }
+
+  function renderNotifications() {
+    const host = $('notifList');
+    if (!state.notifications.length) {
+      host.innerHTML = '<div class="empty-note">Sin notificaciones.</div>';
+      return;
+    }
+    host.innerHTML = state.notifications.map((n) => `
+      <div class="notif-row">
+        <div class="notif-icon">${strokeSvg(NOTIF_ICON[n.icon] || NOTIF_ICON.clock)}</div>
+        <div class="notif-body">
+          <div class="ntitle">${escapeHtml(n.title)}</div>
+          <div class="ntime">${relTime(n.createdAt)}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderPrefs() {
+    if (!state.prefs) return;
+    document.querySelectorAll('.toggle[data-pref]').forEach((el) => {
+      el.classList.toggle('on', !!state.prefs[el.dataset.pref]);
+    });
+    document.body.classList.toggle('hc', !!state.prefs.highContrast);
+  }
+
+  function renderProfile() {
+    const me = state.me;
+    if (!me) return;
+    $('profileAvatar').textContent = me.initials;
+    $('profileName').textContent = me.name;
+    $('profileSub').innerHTML =
+      `Nivel ${me.level} · ${escapeHtml(me.levelName)} &nbsp;·&nbsp; ${fmtNum(me.points)} pts`;
+
+    const grid = $('badgeGrid');
+    if (!me.badges || !me.badges.length) {
+      grid.innerHTML = '<div class="empty-note">Sin insignias todavía.</div>';
+      return;
+    }
+    grid.innerHTML = me.badges.map((b) => `
+      <div class="badge">
+        <div class="bicon">${strokeSvg(BADGE_ICON[b.icon] || BADGE_ICON.shield)}</div>
+        <div class="bname">${escapeHtml(b.name)}</div>
+      </div>`).join('');
+  }
+
+  function greeting() {
+    const h = new Date().getHours();
+    if (h < 12) return 'Buenos días';
+    if (h < 19) return 'Buenas tardes';
+    return 'Buenas noches';
+  }
+
+  // =======================================================================
+  //  Navegación (tabs + pantallas "push")
+  // =======================================================================
+  const tabs = document.querySelectorAll('.tab');
+  const views = document.querySelectorAll('.app-view');
+  const content = $('content');
+  const screenEl = document.querySelector('.screen');
+  let sessionTimerId = null;
+
+  function restartEntranceAnimations(view) {
+    view.querySelectorAll('.session-card, .rank-row').forEach((el) => {
+      el.style.animation = 'none';
+      el.offsetHeight; /* reflow */
+      el.style.animation = null;
+    });
+  }
+
+  function showView(targetId) {
+    views.forEach((v) => v.classList.remove('active'));
+    const view = $(targetId);
+    view.classList.add('active');
+    content.scrollTop = 0;
+    restartEntranceAnimations(view);
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.view;
+      if (tab.classList.contains('active') && !screenEl.classList.contains('push-active')) return;
+      screenEl.classList.remove('push-active');
+      stopSessionTimer();
+      tabs.forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      showView(target);
+    });
+  });
+
+  window.pushView = function pushView(targetId) {
+    screenEl.classList.add('push-active');
+    showView(targetId);
+    if (targetId === 'view-sesion-activa') startSessionTimer();
+  };
+
+  window.popView = function popView(targetTabId) {
+    screenEl.classList.remove('push-active');
+    stopSessionTimer();
+    tabs.forEach((t) => t.classList.toggle('active', t.dataset.view === targetTabId));
+    showView(targetTabId);
+  };
+
+  // =======================================================================
+  //  Timer de sesión activa
+  // =======================================================================
+  function startSessionTimer() {
+    let remaining = 120;
+    const el = $('timerNum');
+    const render = () => {
+      el.textContent =
+        `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
+    };
+    render();
+    stopSessionTimer();
+    sessionTimerId = setInterval(() => {
+      remaining = Math.max(0, remaining - 1);
+      render();
+      if (remaining === 0) stopSessionTimer();
+    }, 1000);
+  }
+  function stopSessionTimer() {
+    if (sessionTimerId) { clearInterval(sessionTimerId); sessionTimerId = null; }
+  }
+
+  // =======================================================================
+  //  Toast
+  // =======================================================================
+  let toastTimeoutId = null;
+  function showToast(text, kind = 'ok') {
+    const toast = $('toast');
+    $('toastText').textContent = text;
+    toast.classList.toggle('err', kind === 'err');
+    toast.classList.add('show');
+    if (toastTimeoutId) clearTimeout(toastTimeoutId);
+    toastTimeoutId = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
+  // =======================================================================
+  //  Acciones
+  // =======================================================================
+  async function openSession(slug) {
+    const s = state.sessions.find((x) => x.slug === slug);
+    if (!s) return;
+    if (s.status === 'locked') {
+      const msg = s.lockedReason === 'prereq'
+        ? `Antes completa "${String(s.prerequisiteSlug || '').replace(/-/g, ' ')}".`
+        : s.lockedReason === 'sensory'
+        ? 'Tu perfil sensorial bloquea esta sesión.'
+        : `Necesitas Nivel ${s.requiredLevel} para esta sesión.`;
+      showToast(msg, 'err');
+      return;
+    }
+    if (s.status === 'completed') {
+      showToast('Ya completaste esta sesión.', 'ok');
+      return;
+    }
+
+    state.currentSlug = slug;
+    $('activeTitle').textContent = s.name;
+    $('activeSub').textContent = `${s.description} · ${s.durationMin} min`;
+    const btn = $('btnComplete');
+    btn.textContent = `Completar sesión · +${s.points} pts`;
+    btn.disabled = false;
+
+    try {
+      if (s.status === 'available') {
+        await api(`/sessions/${slug}/start`, { method: 'POST' });
+        await refreshSessions();
+      }
+    } catch (e) {
+      showToast(e.message, 'err');
+    }
+    pushView('view-sesion-activa');
+  }
+
+  async function completeSession() {
+    const slug = state.currentSlug;
+    if (!slug) return;
+    const btn = $('btnComplete');
+    btn.disabled = true;
+    stopSessionTimer();
+
+    try {
+      const resp = await api(`/sessions/${slug}/complete`, { method: 'POST' });
+      state.me = resp.me;
+      await Promise.all([refreshSessions(), refreshActivity(), refreshLeaderboard(), refreshNotifications()]);
+      renderAll();
+      window.popView('view-sesiones');
+      showToast(`+${resp.awarded} pts sumados`);
+    } catch (e) {
+      if (e.status === 409 && e.data && e.data.me) {
+        state.me = e.data.me;
+        await refreshSessions();
+        renderAll();
+        window.popView('view-sesiones');
+        showToast('Esa sesión ya estaba completada.', 'err');
+      } else {
+        btn.disabled = false;
+        showToast(e.message, 'err');
+      }
+    }
+  }
+  $('btnComplete').addEventListener('click', completeSession);
+
+  // Toggles de preferencias -> PATCH optimista
+  document.querySelectorAll('.toggle[data-pref]').forEach((el) => {
+    el.addEventListener('click', async () => {
+      if (el.classList.contains('busy') || !state.prefs) return;
+      const key = el.dataset.pref;
+      const nextVal = !state.prefs[key];
+      el.classList.add('busy');
+      el.classList.toggle('on', nextVal); // feedback inmediato
+      try {
+        state.prefs = await api('/preferences', { method: 'PATCH', body: { [key]: nextVal } });
+        renderPrefs();
+      } catch (e) {
+        el.classList.toggle('on', !nextVal); // revertir
+        showToast(e.message, 'err');
+      } finally {
+        el.classList.remove('busy');
+      }
+    });
+  });
+
+  $('ctaBtn').addEventListener('click', () => {
+    const next = state.sessions.find((s) => s.status === 'in_progress')
+      || state.sessions.find((s) => s.status === 'available');
+    if (next) openSession(next.slug);
+  });
+
+  $('logoutRow').addEventListener('click', () => {
+    localStorage.removeItem(TOKEN_KEY);
+    state.token = null;
+    showToast('Sesión cerrada. Reconectando…');
+    setTimeout(() => location.reload(), 600);
+  });
+
+  // =======================================================================
+  //  Cargas
+  // =======================================================================
+  const refreshMe = async () => { state.me = await api('/me'); };
+  const refreshSessions = async () => { state.sessions = await api('/sessions'); };
+  const refreshLeaderboard = async () => { state.leaderboard = await api('/leaderboard'); };
+  const refreshActivity = async () => { state.activity = await api('/activity?limit=8'); };
+  const refreshNotifications = async () => { state.notifications = await api('/notifications'); };
+  const refreshPrefs = async () => { state.prefs = await api('/preferences'); };
+
+  async function loadAll() {
+    await Promise.all([
+      refreshMe(), refreshSessions(), refreshLeaderboard(),
+      refreshActivity(), refreshNotifications(), refreshPrefs(),
+    ]);
+  }
+
+  // =======================================================================
+  // =======================================================================
+  //  Onboarding / auth  (registro, verificación OTP, perfil sensorial)
+  // =======================================================================
+  const SENSOLAB_LOGO = `
+    <svg viewBox="0 0 268 74" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SensoLab Solutions">
+      <g fill="none" stroke-linecap="round">
+        <path d="M64 18 A27 27 0 1 0 70 47" stroke="#f2891c" stroke-width="7.5"/>
+        <path d="M57 15 A20 20 0 1 0 62 40" stroke="#ffb067" stroke-width="6" opacity="0.9"/>
+        <path d="M28 56 A25 25 0 1 1 22 24" stroke="#3fb2bd" stroke-width="7.5"/>
+        <path d="M33 60 A17 17 0 1 1 28 33" stroke="#7fd4dd" stroke-width="6" opacity="0.92"/>
+      </g>
+      <text x="92" y="42" font-family="Fraunces, Georgia, serif" font-size="31" font-weight="600" fill="#f3f0e8">SensoLab</text>
+      <text x="94" y="60" font-family="'IBM Plex Mono', monospace" font-size="10" letter-spacing="7" fill="#9aa7b8">SOLUTIONS</text>
+    </svg>`;
+
+  let onbEmail = null;   // correo en curso de registro/login
+
+  const enterAuthMode = () => screenEl.classList.add('auth-active');
+  const exitAuthMode  = () => screenEl.classList.remove('auth-active');
+  const showAuth = (id) => { enterAuthMode(); showView(id); };
+
+  function setDevHint(code) {
+    const el = $('verifyHint');
+    if (code) { el.textContent = `Código de prueba: ${code}`; el.hidden = false; }
+    else { el.hidden = true; }
+  }
+  function clearOtp() {
+    $('otpRow').querySelectorAll('.otp-cell').forEach((c) => { c.value = ''; c.classList.remove('filled'); });
+  }
+  function readOtp() {
+    return [...$('otpRow').querySelectorAll('.otp-cell')].map((c) => c.value).join('');
+  }
+
+  async function doRegister() {
+    const name  = $('regName').value.trim();
+    const email = $('regEmail').value.trim();
+    const phone = $('regPhone').value.trim();
+    if (!name || !email) { showToast('Nombre y correo son obligatorios.', 'err'); return; }
+    if (!/.+@.+\..+/.test(email)) { showToast('Correo no válido.', 'err'); return; }
+    const btn = $('regSubmit'); btn.disabled = true;
+    try {
+      const r = await api('/auth/register', { method: 'POST', auth: false, body: { name, email, phone } });
+      onbEmail = email;
+      if (r.mode === 'login') showToast('Ya tienes cuenta — te enviamos un código.');
+      $('verifyEmail').textContent = email;
+      setDevHint(r.devCode);
+      clearOtp();
+      showAuth('view-auth-verify');
+      $('otpRow').querySelector('.otp-cell').focus();
+    } catch (e) { showToast(e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+
+  async function doRequestOtp() {
+    const email = $('loginEmail').value.trim();
+    if (!email) { showToast('Escribe tu correo.', 'err'); return; }
+    const btn = $('loginSubmit'); btn.disabled = true;
+    try {
+      const r = await api('/auth/request-otp', { method: 'POST', auth: false, body: { email } });
+      onbEmail = email;
+      $('verifyEmail').textContent = email;
+      setDevHint(r.devCode);
+      clearOtp();
+      showAuth('view-auth-verify');
+      $('otpRow').querySelector('.otp-cell').focus();
+    } catch (e) { showToast(e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+
+  async function doResendOtp() {
+    if (!onbEmail) return;
+    try {
+      const r = await api('/auth/request-otp', { method: 'POST', auth: false, body: { email: onbEmail } });
+      setDevHint(r.devCode);
+      clearOtp();
+      $('otpRow').querySelector('.otp-cell').focus();
+      showToast('Código reenviado.');
+    } catch (e) { showToast(e.message, 'err'); }
+  }
+
+  async function doVerify() {
+    const code = readOtp();
+    if (code.length < 6) { showToast('Escribe los 6 dígitos.', 'err'); return; }
+    const btn = $('verifySubmit'); btn.disabled = true;
+    try {
+      const r = await api('/auth/verify-otp', { method: 'POST', auth: false, body: { email: onbEmail, code } });
+      state.token = r.token;
+      localStorage.setItem(TOKEN_KEY, r.token);
+      state.me = r.user;
+      routeAfterAuth(r.user.onboarding);
+    } catch (e) { showToast(e.message, 'err'); btn.disabled = false; }
+  }
+
+  async function doDemoLogin() {
+    try { await demoLogin(); await enterApp(); }
+    catch (e) { showToast('No hay conexión con el backend.', 'err'); }
+  }
+
+  function routeAfterAuth(onb) {
+    if (!onb || onb.done) return enterApp();
+    if (onb.nextStep === 'sensory-profile') return showAuth('view-onb-perfil');
+    if (onb.nextStep === 'consent') return showAuth('view-onb-consent');
+    return enterApp();
+  }
+
+  async function enterApp() {
+    exitAuthMode();
+    showAiFab();
+    await loadAll();
+    renderAll();
+    tabs.forEach((t) => t.classList.toggle('active', t.dataset.view === 'view-home'));
+    showView('view-home');
+    $('bootOverlay').hidden = true;
+  }
+
+  const chipValues = (id) =>
+    [...$(id).querySelectorAll('.chip-select.on')].map((c) => c.dataset.val);
+
+  async function doSaveProfile() {
+    const country = $('onbCountry').value.trim();
+    const city = $('onbCity').value.trim();
+    if (!country || !city) { showToast('País y ciudad son obligatorios.', 'err'); return; }
+    const btn = $('onbPerfilSubmit'); btn.disabled = true;
+    const body = {
+      country, city,
+      dob: $('onbDob').value || null,
+      dietaryRestrictions: chipValues('onbDiet'),
+      allergies: chipValues('onbAllergy'),
+      smoker: $('onbSmoker').classList.contains('on'),
+      sensoryPrefs: { intensidad: $('onbIntensity').dataset.val || 'media' },
+    };
+    try {
+      const r = await api('/me/sensory-profile', { method: 'PUT', body });
+      routeAfterAuth(r.onboarding);
+    } catch (e) { showToast(e.message, 'err'); btn.disabled = false; }
+  }
+
+  async function doConsent() {
+    if (!$('consentData').checked) {
+      showToast('Necesitas aceptar el uso de datos.', 'err'); return;
+    }
+    const kinds = ['datos'];
+    if ($('consentStudy').checked) kinds.push('estudios_socio');
+    const btn = $('onbConsentSubmit'); btn.disabled = true;
+    try {
+      await api('/me/consent', { method: 'POST', body: { kinds } });
+      await enterApp();
+    } catch (e) { showToast(e.message, 'err'); btn.disabled = false; }
+  }
+
+  function wireOtpInputs() {
+    const cells = [...$('otpRow').querySelectorAll('.otp-cell')];
+    cells.forEach((cell, i) => {
+      cell.addEventListener('input', () => {
+        cell.value = cell.value.replace(/\D/g, '').slice(0, 1);
+        cell.classList.toggle('filled', !!cell.value);
+        if (cell.value && i < cells.length - 1) cells[i + 1].focus();
+        if (readOtp().length === 6) doVerify();
+      });
+      cell.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !cell.value && i > 0) cells[i - 1].focus();
+      });
+      cell.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+        digits.split('').forEach((d, k) => { if (cells[k]) { cells[k].value = d; cells[k].classList.add('filled'); } });
+        if (digits.length === 6) doVerify();
+        else if (cells[digits.length]) cells[digits.length].focus();
+      });
+    });
+  }
+
+  function wireOnboarding() {
+    wireAssistant();
+    document.querySelectorAll('[data-logo]').forEach((el) => { el.innerHTML = SENSOLAB_LOGO; });
+    $('goRegister').onclick = () => showAuth('view-auth-register');
+    $('goLogin').onclick    = () => showAuth('view-auth-login');
+    $('goDemo').onclick     = doDemoLogin;
+    $('regSubmit').onclick    = doRegister;
+    $('loginSubmit').onclick  = doRequestOtp;
+    $('verifySubmit').onclick = doVerify;
+    $('verifyResend').onclick = doResendOtp;
+    $('onbPerfilSubmit').onclick  = doSaveProfile;
+    $('onbConsentSubmit').onclick = doConsent;
+
+    wireOtpInputs();
+
+    document.querySelectorAll('.chip-select').forEach((c) => {
+      c.onclick = () => c.classList.toggle('on');
+    });
+    $('onbIntensity').querySelectorAll('.seg-opt').forEach((opt) => {
+      opt.onclick = () => {
+        $('onbIntensity').querySelectorAll('.seg-opt').forEach((o) => o.classList.remove('on'));
+        opt.classList.add('on');
+        $('onbIntensity').dataset.val = opt.dataset.val;
+      };
+    });
+    $('onbSmoker').onclick = () => $('onbSmoker').classList.toggle('on');
+    document.querySelectorAll('.auth-back').forEach((b) => {
+      b.onclick = () => showAuth('view-auth-landing');
+    });
+  }
+  // =======================================================================
+  //  Arranque
+  // =======================================================================
+  function showBootError(message) {
+    $('bootSpinner').style.display = 'none';
+    $('bootMsg').textContent = message;
+    $('bootCode').hidden = false;
+    const retry = $('bootRetry');
+    retry.hidden = false;
+    retry.onclick = () => location.reload();
+  }
+
+  async function boot() {
+    wireOnboarding();
+
+    if (!state.token) {
+      enterAuthMode();
+      showView('view-auth-landing');
+      $('bootOverlay').hidden = true;
+      return;
+    }
+    try {
+      state.me = await api('/me');
+      routeAfterAuth(state.me.onboarding);
+    } catch (e) {
+      if (e.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        state.token = null;
+        enterAuthMode();
+        showView('view-auth-landing');
+        $('bootOverlay').hidden = true;
+        return;
+      }
+      console.error('boot failed', e);
+      showBootError('No hay conexión con el backend. Arranca el servidor local y reintenta:');
+    }
+  }
+  // =======================================================================
+  //  Asistente de IA
+  // =======================================================================
+  const aiState = { messages: [], busy: false, greeted: false };
+
+  function aiBubble(role, text) {
+    const el = document.createElement('div');
+    el.className = 'ai-msg ' + (role === 'user' ? 'me' : 'bot');
+    el.textContent = text;
+    $('aiBody').appendChild(el);
+    $('aiBody').scrollTop = $('aiBody').scrollHeight;
+    return el;
+  }
+
+  async function aiSendText(text) {
+    text = (text || '').trim();
+    if (!text || aiState.busy) return;
+    aiState.busy = true;
+    $('aiSend').disabled = true;
+    $('aiInput').value = '';
+    aiState.messages.push({ role: 'user', content: text });
+    aiBubble('user', text);
+    const typing = aiBubble('assistant', 'Escribiendo…');
+    typing.classList.add('typing');
+
+    try {
+      const r = await api('/assistant', {
+        method: 'POST', auth: false,
+        body: { messages: aiState.messages.slice(-12) },
+      });
+      typing.remove();
+      const reply = r.reply || 'No tengo una respuesta para eso.';
+      aiState.messages.push({ role: 'assistant', content: reply });
+      aiBubble('assistant', reply);
+    } catch (e) {
+      typing.remove();
+      aiBubble('assistant', 'No pude conectar con el asistente. Intenta de nuevo.');
+    } finally {
+      aiState.busy = false;
+      $('aiSend').disabled = false;
+      $('aiInput').focus();
+    }
+  }
+
+  function openAi() {
+    if (!aiState.greeted) {
+      aiState.greeted = true;
+      aiBubble('assistant',
+        '¡Hola! Soy el asistente de SensoLab. Puedo explicarte cómo funcionan las '
+        + 'sesiones, los puntos, los niveles y las pruebas a distancia. ¿Qué necesitas?');
+    }
+    $('aiPanel').classList.add('open');
+    $('aiPanel').setAttribute('aria-hidden', 'false');
+    setTimeout(() => $('aiInput').focus(), 320);
+  }
+  function closeAi() {
+    $('aiPanel').classList.remove('open');
+    $('aiPanel').setAttribute('aria-hidden', 'true');
+  }
+
+  function wireAssistant() {
+    $('aiFab').onclick = openAi;
+    $('aiClose').onclick = closeAi;
+    $('aiSend').onclick = () => aiSendText($('aiInput').value);
+    $('aiInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); aiSendText($('aiInput').value); }
+    });
+    $('aiSuggest').querySelectorAll('.ai-chip').forEach((c) => {
+      c.onclick = () => aiSendText(c.textContent);
+    });
+  }
+
+  // El FAB aparece cuando el usuario ya entró a la app.
+  function showAiFab() { $('aiFab').classList.remove('hidden'); }
+
+  // =======================================================================
+  //  Puente para el módulo remoto (remote.js). Le da acceso controlado a las
+  //  utilidades de este closure sin volverlas globales una por una.
+  // =======================================================================
+  window.SL = {
+    get state() { return state; },
+    api,
+    showToast,
+    showView,
+    escapeHtml,
+    strokeSvg,
+    fmtNum,
+    relTime,
+    // Acredita puntos tras una validación aprobada (auto o manual).
+    async creditPoints(points, label) {
+      if (!points) return;
+      if (window.SENSOLAB_REMOTE_MOCK !== false) {
+        // Sin backend real: reflejo optimista en el estado local.
+        if (state.me) {
+          state.me.points += points;
+          state.me.weeklyDelta = (state.me.weeklyDelta || 0) + points;
+        }
+        state.activity.unshift({
+          text: `Completaste <b>${escapeHtml(label || 'sesión a distancia')}</b> · a distancia`,
+          createdAt: new Date().toISOString(),
+        });
+        renderAll();
+      } else {
+        try {
+          await Promise.all([refreshMe(), refreshActivity(), refreshLeaderboard()]);
+          renderAll();
+        } catch (e) { console.warn('creditPoints refresh falló', e); }
+      }
+    },
+  };
+
+  document.addEventListener('DOMContentLoaded', boot);
+</script>
+<script src="remote-mock.js"></script>
+<script src="remote.js"></script>

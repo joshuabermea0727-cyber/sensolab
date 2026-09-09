@@ -1,0 +1,9 @@
+backend/
+docs/
+node_modules/
+Dockerfile
+docker-compose.yml
+.dockerignore
+*.db
+*.db-shm
+*.db-wal

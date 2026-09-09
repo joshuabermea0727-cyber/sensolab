@@ -1,0 +1,6 @@
+node_modules/
+*.log
+sensolab.db
+sensolab.db-shm
+sensolab.db-wal
+.env
