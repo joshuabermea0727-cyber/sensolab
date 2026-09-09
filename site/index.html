@@ -467,8 +467,8 @@
 (function () {
   var $ = function (id) { return document.getElementById(id); };
 
-  window.SENSOLAB_APP_URL = window.SENSOLAB_APP_URL || '/';
-  if (typeof window.SENSOLAB_API === 'undefined' || window.SENSOLAB_API === null) window.SENSOLAB_API = '';
+  window.SENSOLAB_APP_URL = window.SENSOLAB_APP_URL || 'https://sensolab-production.up.railway.app/';
+  if (typeof window.SENSOLAB_API === 'undefined' || window.SENSOLAB_API === null) window.SENSOLAB_API = 'https://sensolab-production.up.railway.app';
   try {
     $('yr').textContent = new Date().getFullYear();
     var oa = $('openApp'); if (oa) oa.href = window.SENSOLAB_APP_URL;
