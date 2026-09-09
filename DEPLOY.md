@@ -1,5 +1,20 @@
 # Despliegue — SensoLab
 
+## Estado actual
+
+- ✅ **Repo**: https://github.com/joshuabermea0727-cyber/sensolab
+- ✅ **Sitio corporativo (GitHub Pages)**: https://joshuabermea0727-cyber.github.io/sensolab/
+  — se redepliega solo en cada push que toque `site/` (workflow `.github/workflows/pages.yml`).
+- ⏳ **App en Vercel**: pendiente. Importa el repo en https://vercel.com/new
+  (si no aparece `sensolab`, primero dale acceso a ese repo desde
+  GitHub → Settings → Applications → Vercel). Root directory `.`, framework "Other".
+- ⏳ **Backend en Railway**: pendiente (mañana). Pasos abajo.
+
+Tras desplegar Vercel y Railway, edita las URLs en `config.js` y en las dos
+líneas de config de `site/index.html`, y haz push.
+
+---
+
 Tres piezas:
 
 | Pieza | Dónde | Qué es |
