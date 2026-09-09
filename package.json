@@ -2,13 +2,16 @@
   "name": "sensolab-community",
   "version": "1.0.0",
   "private": true,
-  "description": "SensoLab Community — PWA (raíz) + backend (backend/) + sitio (site/).",
-  "engines": { "node": ">=22.5.0" },
+  "description": "SensoLab Community \u00e2\u20ac\u201d PWA (ra\u00c3\u00adz) + backend (backend/) + sitio (site/).",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "postinstall": "cd backend && npm install",
     "start": "cd backend && npm start",
     "dev": "cd backend && npm run dev",
     "seed": "cd backend && npm run seed",
-    "reset": "cd backend && npm run reset"
+    "reset": "cd backend && npm run reset",
+    "start:prod": "npm run seed && npm run start"
   }
 }
