@@ -1,31 +1,40 @@
 # ---------------------------------------------------------------------------
-# Prototipo local SensoLab Community — se queda APAGADO por defecto.
+# SensoLab — todo en un contenedor (app + sitio + backend + asistente).
 #
-#   Encender para pruebas:   docker compose up -d --build
+#   Copia .env.example a .env y pon tu OPENAI_API_KEY.
+#   Encender:                docker compose up -d --build
 #   Ver logs:                docker compose logs -f
 #   Apagar:                  docker compose down
 #   Apagar + borrar datos:   docker compose down -v
 #
-# App + API:  http://localhost:4000
+#   App:    http://localhost:4000
+#   Sitio:  http://localhost:4000/site/
+#   API:    http://localhost:4000/api/health
 # ---------------------------------------------------------------------------
 services:
   sensolab:
     build: .
-    image: sensolab-community:local
-    container_name: sensolab-community
+    image: sensolab:local
+    container_name: sensolab
     ports:
       - "4000:4000"
     environment:
       PORT: "4000"
-      JWT_SECRET: "sensolab-local-dev-secret"
+      NODE_ENV: "production"
+      JWT_SECRET: "${JWT_SECRET:-sensolab-local-dev-secret}"
+      CORS_ORIGIN: "${CORS_ORIGIN:-*}"
       SENSOLAB_DB_PATH: "/data/sensolab.db"
-      CORS_ORIGIN: "*"
+      # Asistente de IA — pon tu clave en .env (OpenAI por defecto).
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ASSISTANT_MODEL: "${ASSISTANT_MODEL:-}"
+      # Alternativa si algún día usas Anthropic:
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
     volumes:
-      - sensolab-db:/data        # la base SQLite persiste entre reinicios
-    restart: "no"                # prototipo: nunca se levanta solo
+      - sensolab-db:/data          # la base SQLite persiste entre reinicios
+    restart: unless-stopped        # se vuelve a levantar tras reiniciar la laptop
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/health"]
-      interval: 10s
+      interval: 15s
       timeout: 3s
       retries: 5
 

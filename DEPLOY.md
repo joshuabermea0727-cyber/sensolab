@@ -1,5 +1,29 @@
 # Despliegue — SensoLab
 
+## Opción A — Docker en tu laptop (lo que estás haciendo ahora)
+
+Un solo contenedor sirve **app + sitio + backend + asistente**.
+
+```bash
+cp .env.example .env          # pon tu OPENAI_API_KEY
+docker compose up -d --build
+```
+
+- App:   http://localhost:4000
+- Sitio: http://localhost:4000/site/
+- Datos: volumen `sensolab-db` (persiste; `docker compose down -v` lo borra).
+- `restart: unless-stopped` → sobrevive reinicios de la laptop.
+- Para que sea accesible desde fuera: túnel (`cloudflared tunnel --url http://localhost:4000`)
+  o port-forward del puerto 4000 en tu router. Luego, si el sitio se sirve desde
+  otro dominio, actualiza `window.SENSOLAB_API` en `site/index.html`.
+
+El asistente usa **OpenAI** por defecto (`OPENAI_API_KEY`). Modelo por defecto
+`gpt-4o-mini`; cámbialo con `ASSISTANT_MODEL`.
+
+---
+
+## Opción B — Cloud (Vercel + Railway + Pages)
+
 ## Estado actual
 
 - ✅ **Repo**: https://github.com/joshuabermea0727-cyber/sensolab

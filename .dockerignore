@@ -2,7 +2,15 @@
 **/*.db
 **/*.db-shm
 **/*.db-wal
+**/*.log
+.env
 **/.env
-**/server.log
+*.bak
+*.bak*
 .git
 .gitignore
+.github
+.vercel
+.vercelignore
+docs
+DEPLOY.md

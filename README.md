@@ -24,6 +24,38 @@ sensolab-community/
 
 ---
 
+## Correr con Docker (recomendado)
+
+Todo —app, sitio corporativo, API y asistente de IA— en **un solo contenedor**.
+
+```bash
+cp .env.example .env          # y pon tu OPENAI_API_KEY dentro
+docker compose up -d --build
+```
+
+| URL | Qué es |
+|---|---|
+| http://localhost:4000        | La app SensoLab Community |
+| http://localhost:4000/site/  | La web de SensoLab Solutions |
+| http://localhost:4000/api/health | Estado del backend |
+
+- La base SQLite vive en el volumen `sensolab-db` y **persiste** entre reinicios.
+- `restart: unless-stopped` → el contenedor vuelve a levantarse al reiniciar la
+  laptop, hasta que hagas `docker compose down`.
+- El asistente de IA usa **OpenAI** (`OPENAI_API_KEY` en `.env`). Sin clave, el
+  chat sigue funcionando y responde "no configurado".
+- Para exponerlo fuera de tu red (que "tu laptop sea el servidor" de verdad)
+  necesitas port-forwarding en tu router o un túnel (`cloudflared`, `ngrok`)
+  apuntando al puerto 4000.
+
+```bash
+docker compose logs -f        # ver logs
+docker compose down           # apagar (conserva datos)
+docker compose down -v        # apagar y BORRAR la base
+```
+
+---
+
 ## Correr sin Docker
 
 Requiere **Node ≥ 22.5** (usa `node:sqlite` integrado).

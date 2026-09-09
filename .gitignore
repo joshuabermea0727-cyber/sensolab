@@ -4,6 +4,8 @@ node_modules/
 *.db-shm
 *.db-wal
 .env
-.env.*
+.env.local
+.env.*.local
+!.env.example
 .vercel
 .DS_Store

@@ -370,8 +370,10 @@
 
 <script>
   // ---- Configuración (edítala tras desplegar) -----------------------------
-  window.SENSOLAB_APP_URL = window.SENSOLAB_APP_URL || 'https://sensolab-community.vercel.app';
-  window.SENSOLAB_API     = window.SENSOLAB_API     || 'https://sensolab-backend.up.railway.app';
+  // Mismo origen por defecto (el backend sirve también este sitio en Docker/local).
+  // Si despliegas el sitio aparte (GitHub Pages), pon aquí la URL pública del backend.
+  window.SENSOLAB_APP_URL = window.SENSOLAB_APP_URL || '/';
+  window.SENSOLAB_API     = window.SENSOLAB_API     ?? '';
 
   document.getElementById('yr').textContent = new Date().getFullYear();
   document.getElementById('openApp').href = window.SENSOLAB_APP_URL;

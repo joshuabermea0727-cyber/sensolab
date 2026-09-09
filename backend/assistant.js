@@ -2,18 +2,23 @@
 // assistant.js — proxy al modelo de IA para el asistente de SensoLab.
 //
 // El navegador NUNCA ve la API key: llama a POST /api/assistant y este módulo
-// reenvía a la API de Anthropic con la clave del entorno. Si no hay clave, el
-// endpoint responde 200 con un mensaje de "no configurado" para que la UI
-// degrade con elegancia.
+// reenvía al proveedor con la clave del entorno. Si no hay clave, responde 200
+// con un mensaje de "no configurado" para que la UI degrade con elegancia.
 //
-// Variables de entorno:
-//   ANTHROPIC_API_KEY   (obligatoria para respuestas reales)
-//   ASSISTANT_MODEL     (opcional, por defecto claude-haiku-4-5-20251001)
+// Proveedor (se elige por las variables de entorno presentes):
+//   OPENAI_API_KEY      -> OpenAI  (por defecto, modelo gpt-4o-mini)
+//   ANTHROPIC_API_KEY   -> Anthropic (modelo claude-haiku-4-5-20251001)
+// Overrides opcionales:
+//   ASSISTANT_MODEL     -> fuerza el nombre del modelo
 // ---------------------------------------------------------------------------
 
-const MODEL = process.env.ASSISTANT_MODEL || 'claude-haiku-4-5-20251001';
-const API_URL = 'https://api.anthropic.com/v1/messages';
 const MAX_TOKENS = 700;
+
+function provider() {
+  if (process.env.OPENAI_API_KEY) return 'openai';
+  if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
+  return null;
+}
 
 // Base de conocimiento — todo lo que el bot debe saber de SensoLab.
 const SYSTEM_PROMPT = `Eres el asistente de SensoLab, en español (usa "tú").
@@ -72,9 +77,51 @@ function rateLimited(ip) {
   return arr.length > MAX_PER_WINDOW;
 }
 
+async function callOpenAI(messages) {
+  const model = process.env.ASSISTANT_MODEL || 'gpt-4o-mini';
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: MAX_TOKENS,
+      temperature: 0.4,
+      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`openai ${res.status} ${detail.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  return (data.choices?.[0]?.message?.content || '').trim();
+}
+
+async function callAnthropic(messages) {
+  const model = process.env.ASSISTANT_MODEL || 'claude-haiku-4-5-20251001';
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({ model, max_tokens: MAX_TOKENS, system: SYSTEM_PROMPT, messages }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`anthropic ${res.status} ${detail.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  return (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
+}
+
 /**
  * @param {{messages: {role:'user'|'assistant', content:string}[]}} body
- * @returns {Promise<{reply:string, configured:boolean}>}
+ * @returns {Promise<{reply:string, configured:boolean, provider?:string}>}
  */
 export async function askAssistant(body, ip) {
   const msgs = Array.isArray(body?.messages) ? body.messages : [];
@@ -83,46 +130,29 @@ export async function askAssistant(body, ip) {
     .slice(-12)
     .map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }));
 
+  const prov = provider();
+
   if (!clean.length || clean[clean.length - 1].role !== 'user') {
-    return { reply: 'Escribe tu pregunta y con gusto te ayudo.', configured: !!process.env.ANTHROPIC_API_KEY };
+    return { reply: 'Escribe tu pregunta y con gusto te ayudo.', configured: !!prov };
   }
   if (rateLimited(ip)) {
     return { reply: 'Vas muy rápido — espera un momento y vuelve a intentar.', configured: true };
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!prov) {
     return {
       reply: 'El asistente de IA todavía no está configurado en este entorno. '
-        + 'Cuando el equipo agregue la clave del modelo, podré responder tus dudas sobre SensoLab.',
+        + 'Cuando el equipo agregue la clave del modelo (OPENAI_API_KEY), '
+        + 'podré responder tus dudas sobre SensoLab.',
       configured: false,
     };
   }
 
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      messages: clean,
-    }),
-  });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    console.error('assistant upstream error', res.status, detail.slice(0, 300));
+  try {
+    const reply = (prov === 'openai' ? await callOpenAI(clean) : await callAnthropic(clean))
+      || 'No tengo una respuesta para eso.';
+    return { reply, configured: true, provider: prov };
+  } catch (err) {
+    console.error('assistant upstream error', String(err).slice(0, 400));
     return { reply: 'Ahora mismo no puedo responder. Intenta de nuevo en un momento.', configured: true };
   }
-
-  const data = await res.json();
-  const reply = (data.content || [])
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n')
-    .trim() || 'No tengo una respuesta para eso.';
-  return { reply, configured: true };
 }
