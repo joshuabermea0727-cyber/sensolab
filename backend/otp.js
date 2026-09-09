@@ -29,7 +29,8 @@ const sixDigits = () => String(Math.floor(100000 + Math.random() * 900000));
 /** Emite un OTP nuevo e invalida los anteriores del mismo email+propósito. */
 export function issueOtp(email, purpose = 'verify') {
   consumeAllFor.run(email, purpose);
-  const code = process.env.NODE_ENV === 'production' ? sixDigits() : '000000';
+  // OTP fijo para demo; pon DEMO_OTP=false cuando conectes envío real de correo/SMS.
+  const code = process.env.DEMO_OTP === 'false' ? sixDigits() : '000000';
   const expiresAt = new Date(Date.now() + TTL_MIN * 60_000)
     .toISOString().replace('T', ' ').slice(0, 19);
   insOtp.run(email, code, purpose, expiresAt);

@@ -23,6 +23,7 @@ const PORT = process.env.PORT || 4000;
 const REPO_ROOT = join(__dirname, '..');
 const nowISO = () => new Date().toISOString();
 const isDev = process.env.NODE_ENV !== 'production';
+const demoOtp = process.env.DEMO_OTP !== 'false';  // OTP fijo + código visible en la respuesta
 
 const app = express();
 app.use(express.json());
@@ -257,7 +258,7 @@ app.post('/api/auth/register', (req, res) => {
     return res.json({
       mode: 'login', email,
       message: 'Ya existe una cuenta con ese correo. Te enviamos un código para entrar.',
-      ...(isDev ? { devCode: otp.code } : {}),
+      ...(demoOtp ? { devCode: otp.code } : {}),
     });
   }
 
@@ -275,7 +276,7 @@ app.post('/api/auth/register', (req, res) => {
   res.status(201).json({
     mode: 'register', userId: userRow.id, email, needsVerify: true,
     message: 'Cuenta creada. Verifica con el código que te enviamos.',
-    ...(isDev ? { devCode: otp.code } : {}),
+    ...(demoOtp ? { devCode: otp.code } : {}),
   });
 });
 
@@ -285,7 +286,7 @@ app.post('/api/auth/request-otp', (req, res) => {
   const user = q.userByEmail.get(email);
   const p = purpose === 'login' || (user && user.status === 'active') ? 'login' : 'verify';
   const otp = issueOtp(email, p);
-  res.json({ email, purpose: p, ...(isDev ? { devCode: otp.code } : {}) });
+  res.json({ email, purpose: p, ...(demoOtp ? { devCode: otp.code } : {}) });
 });
 
 app.post('/api/auth/verify-otp', (req, res) => {

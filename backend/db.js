@@ -189,6 +189,9 @@ const ADD_COLUMNS = [
   ['user_sessions', 'idempotency_key', 'TEXT'],
   ['preferences', "reminder_hour", "TEXT NOT NULL DEFAULT '19:00'"],
   ['notifications', "tipo", "TEXT NOT NULL DEFAULT 'system'"],
+  ['badges', "criterio_tipo", "TEXT NOT NULL DEFAULT 'sesiones_count'"],
+  ['badges', 'criterio_valor', 'INTEGER NOT NULL DEFAULT 1'],
+  ['badges', 'points', 'INTEGER NOT NULL DEFAULT 0'],
 ];
 
 for (const [table, col, type] of ADD_COLUMNS) {

@@ -24,6 +24,7 @@ services:
       JWT_SECRET: "${JWT_SECRET:-sensolab-local-dev-secret}"
       CORS_ORIGIN: "${CORS_ORIGIN:-*}"
       SENSOLAB_DB_PATH: "/data/sensolab.db"
+      DEMO_OTP: "${DEMO_OTP:-true}"       # true = código OTP fijo 000000 visible (prototipo)
       # Asistente de IA — pon tu clave en .env (OpenAI por defecto).
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       ASSISTANT_MODEL: "${ASSISTANT_MODEL:-}"
